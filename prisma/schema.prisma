@@ -1,0 +1,269 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Usuarios {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  login String @unique
+  senha String
+  nome  String
+  email String @unique
+  nivelAcesso Int
+  ativo Boolean @default(true)
+  dataCriacao DateTime @default(now())
+
+  orcamentos    Orcamento[]  // adicione essa linha também!
+  vendas        Vendas[]
+
+  @@index([nome])
+  @@index([ativo])
+
+}
+
+model Fornecedores {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome        String   @unique 
+  cep         String   
+  telefone    String?
+  email       String?
+  cidade      String
+  estado      String
+  bairro      String
+  rua         String
+  numero      Int
+  descricao   String
+  ativo       Boolean  @default(true)
+  
+  produtos    Produtos[]  // adicione essa linha também!
+  madeiras    Madeiras[]
+
+  @@map("Fornecedores")
+
+  // Índices recomendados
+  @@index([ativo])
+}
+
+model Produtos {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome           String   @unique
+  madeiraid      String?  @map("madeira") @db.ObjectId
+  tamanhoid      String?  @map("tamanho") @db.ObjectId
+  valor          Float
+  unidade        String?
+  quantidade     Int?     @default(0)
+  quantidadeMin  Int?     @default(0)
+  acabando       Boolean? @default(false)
+  fornecedorId   String?   @map("fornecedor") @db.ObjectId  // ← adicione @db.ObjectId aqui!
+
+  fornecedor    Fornecedores? @relation(fields: [fornecedorId], references: [id])
+  madeira       Madeiras? @relation(fields: [madeiraid], references: [id])
+  tamanho       Tamanhos? @relation(fields: [tamanhoid], references: [id])
+
+  estoqueProdutos  EstoqueProdutos[]  // ← adicione esta
+  orcamentoE       OrcamentoE[]
+  vendaE          VendasE[]
+
+  @@map("Produtos")
+
+  // Índices recomendados
+  @@index([quantidade])
+  @@index([acabando])
+  @@index([fornecedorId])
+}
+
+model Madeiras {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  nome          String
+  fornecedorId  String?   @map("fornecedor") @db.ObjectId
+
+  fornecedor    Fornecedores? @relation(fields: [fornecedorId], references: [id])
+
+  estoqueMadeiras EstoqueMadeiras[]  // ← adicione esta
+  produtos       Produtos[]
+ 
+
+  @@map("Madeiras")
+
+  @@index([nome])
+  @@index([fornecedorId])
+}
+
+model Pecas {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  nome   String  @unique
+  valor  Float
+  unidade String? 
+
+  orcamentoE      OrcamentoE[]
+  vendasE         VendasE[]
+
+  @@map("Pecas")
+}
+
+model Tamanhos {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  nome            String
+  
+  estoqueMadeiras EstoqueMadeiras[]
+  produtos       Produtos[]
+
+  @@map("Tamanhos")
+}
+
+model EstoqueMadeiras {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  madeiraId  String   @map("madeira") @db.ObjectId
+  tamanhoId  String   @map("tamanho") @db.ObjectId
+  quantidade Int      @default(0)
+  acabando   Boolean  @default(false)
+
+  madeira    Madeiras? @relation(fields: [madeiraId], references: [id])
+  tamanho    Tamanhos? @relation(fields: [tamanhoId], references: [id])
+  orcamentoE OrcamentoE[]
+  vendasE    VendasE[]
+
+  @@map("EstoqueMadeiras")
+
+  @@index([madeiraId])
+  @@index([tamanhoId])
+  @@index([acabando])
+}
+
+model EstoqueProdutos {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  produtoId  String?  @map("produto") @db.ObjectId
+  quantidade Int?     @default(0)
+  acabando   Boolean  @default(false)
+
+  produto    Produtos? @relation(fields: [produtoId], references: [id])
+
+  @@map("EstoqueProdutos")
+}
+
+model Clientes {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  nome   String
+  email  String @unique
+  cpf    String @unique 
+  telefone    String
+  cep         String   
+  cidade      String?
+  estado      String?
+  bairro      String?
+  rua         String?
+  numero      Int?
+
+  orcamento   Orcamento[]
+  venda       Vendas[]
+
+  @@map("Clientes")
+
+  @@index([nome])
+}
+
+model Orcamento {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  descricao       String?
+  usuarioId       String   @map("usuario") @db.ObjectId
+  clienteId       String?  @map("cliente") @db.ObjectId
+  nome            String?
+  cpf             String?
+  cep             String?
+  cidade          String?
+  estado          String?
+  bairro          String?
+  rua             String?
+  numero          Int?
+  telefone        String?
+  dataCriacao     DateTime @default(now())
+  valorTotal      Float
+  
+  cliente         Clientes? @relation(fields: [clienteId], references: [id])
+  usuario         Usuarios? @relation(fields: [usuarioId], references: [id])
+  orcamentoE      OrcamentoE[]
+
+  @@map("Orcamento")
+}
+
+model OrcamentoE{
+  id                  String  @id  @default(auto()) @map("_id") @db.ObjectId
+  orcamentoId         String  @map("orcamento") @db.ObjectId
+  estoqueMadeiraId    String?  @map("estoqueMadeira")  @db.ObjectId
+  produtoId           String?  @map("produto") @db.ObjectId
+  pecaId              String?  @map("peca") @db.ObjectId
+  quantidade          Int?
+  valorVenda          Float?
+  valorTotal          Float 
+  dataCriacao         DateTime  @default(now())
+
+  orcamento           Orcamento? @relation(fields: [orcamentoId], references: [id])
+  estoqueMadeira      EstoqueMadeiras? @relation(fields: [estoqueMadeiraId], references: [id])
+  produto             Produtos?  @relation(fields: [produtoId], references: [id])
+  peca                Pecas? @relation(fields: [pecaId], references: [id])
+
+ @@map("OrcamentoE")
+ }
+
+model Vendas {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  descricao         String?
+  usuarioId         String   @map("usuario") @db.ObjectId
+  clienteId         String   @map("cliente") @db.ObjectId
+  nome              String?
+  cpf               String?
+  cep               String?
+  cidade            String?
+  estado            String?
+  bairro            String?
+  rua               String?
+  numero            Int?
+  telefone          String?
+  valorTotal        Float
+  dataCriacao       DateTime  @default(now())
+  dataPagamento     DateTime?
+  pago              Boolean   @default(false)
+
+  cliente           Clientes? @relation(fields: [clienteId], references: [id])
+  usuario           Usuarios? @relation(fields: [usuarioId], references: [id])
+  vendaE            VendasE[]
+
+  @@map("Vendas")
+}
+
+model VendasE{
+  id   String   @id  @default(auto()) @map("_id") @db.ObjectId
+  vendaId           String    @map("venda") @db.ObjectId
+  estoqueMadeiraId  String?   @map("estoqueMadeira") @db.ObjectId
+  produtoId         String?   @map("produto") @db.ObjectId
+  pecaId            String?   @map("peca") @db.ObjectId
+  quantidade        Int
+  valorVenda        Float
+  valorTotal        Float
+  dataCriacao       DateTime  @default(now())
+
+  venda             Vendas? @relation(fields: [vendaId], references: [id])
+  estoqueMadeira    EstoqueMadeiras? @relation(fields: [estoqueMadeiraId], references: [id])
+  produto           Produtos? @relation(fields: [produtoId], references: [id])
+  peca              Pecas? @relation(fields: [pecaId], references: [id])
+
+  @@map("VendasE")
+}
+
+
+
+
+
+
+
