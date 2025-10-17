@@ -2013,13 +2013,5 @@ app.delete("/vendaE/:id", async (req, res) => {
 
 //#endregion
 
-// 🔹 Porta (Vercel define process.env.PORT, local usa 3000)
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
-
-
 // Exporta o app para a Vercel entender
 export default app;
