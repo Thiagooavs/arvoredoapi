@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon local.js",
-    "start": "node local.js",
-    "build": "node prisma-sync.js && next build",
+    "start": "node server.js",
+    "build": "node prisma-sync.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -1,11 +1,11 @@
-const fs = require('fs');
-const { execSync } = require('child_process');
+import fs from "fs";
+import crypto from "crypto";
+import { execSync } from 'child_process';
 
 const schemaPath = './prisma/schema.prisma';
 const hashPath = './prisma/.schemahash';
 
 function getHash(content) {
-  const crypto = require('crypto');
   return crypto.createHash('md5').update(content).digest('hex');
 }
 
