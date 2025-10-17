@@ -1,14 +1,15 @@
 import express from 'express'
 import { PrismaClient } from './generated/prisma/client.js'
-import e from 'express'
 import dotenv from "dotenv";
 
 dotenv.config();
-const prisma = new PrismaClient()
 
 // cabeça
 const app = express()
 app.use(express.json()) //para usar a linguagem json
+
+const prisma = new PrismaClient()
+
 
 
 /* ===========================================================
@@ -2018,3 +2019,7 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+
+// Exporta o app para a Vercel entender
+export default app;
