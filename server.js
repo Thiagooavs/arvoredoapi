@@ -80,7 +80,7 @@ mongodb+srv://thiago:etecjau@arvoredo.dkrq4wj.mongodb.net/?retryWrites=true&w=ma
 
 // 🔹 Rotas de exemplo
 app.get("/", (req, res) => {
-  res.send("API rodando!");
+    res.send("API rodando!");
 });
 
 //#region Usuarios
@@ -94,7 +94,7 @@ Usuario
 
 //criar o usuarios em body
 app.post('/usuarios', async (req, res) => {
-    const{login,senha,nome,email,nivelAcesso} = req.body
+    const { login, senha, nome, email, nivelAcesso } = req.body
     await prisma.usuarios.create({
         data: {
             login,
@@ -117,11 +117,11 @@ app.get('/usuarios', async (req, res) => {
     if (Object.keys(req.query).length > 0) {
         const where = {}
 
-        if (req.query.nome) where.nome = {contains: req.query.nome, mode: "insensitive"}
+        if (req.query.nome) where.nome = { contains: req.query.nome, mode: "insensitive" }
         if (req.query.senha) where.senha = req.query.senha
         if (req.query.nivelAcesso) where.nivelAcesso = req.query.nivelAcesso
         if (req.query.login) where.login = req.query.login
-        if (req.query.email) where.email = {contains: req.query.email, mode: "insensitive"}
+        if (req.query.email) where.email = { contains: req.query.email, mode: "insensitive" }
 
         usuarios = await prisma.usuarios.findMany({
             where
@@ -157,9 +157,9 @@ app.get('/usuarios/:id', async (req, res) => {
 //editar usuarios em route paramiter
 //ex: servidor.com/usuarios/22
 app.put('/usuarios/:id', async (req, res) => {
-    
-    const {id} = req.params
-    const {nome,login,senha,email,nivelAcesso} = req.body
+
+    const { id } = req.params
+    const { nome, login, senha, email, nivelAcesso } = req.body
 
     await prisma.usuarios.update({
         where: {
@@ -469,17 +469,17 @@ app.post("/produtos", async (req, res) => {
                 fornecedorId,
                 madeiraid,
                 tamanhoid
-              },
-              include: {
+            },
+            include: {
                 fornecedor: true,
                 madeira: true,
                 tamanho: true
-              }
-            })
+            }
+        })
 
         res.status(201).json(produto)
 
-    }catch(error){
+    } catch (error) {
 
         console.log('Erro:', error);
         res.status(400).json({ erro: error.message });//usado para mandar a mensagem de status de que deu erro
@@ -503,21 +503,21 @@ app.get("/produtos", async (req, res) => {
 
             if (req.query.nomeFornecedor) {
                 where.fornecedor = {
-                    nome: { contains:nomeFornecedor, mode: "insensitive" }
+                    nome: { contains: nomeFornecedor, mode: "insensitive" }
                 }
             }
-             if (req.query.nomeMadeira) {
+            if (req.query.nomeMadeira) {
                 where.madeira = {
-                    nome: { contains:nomeMadeira, mode: "insensitive" }
+                    nome: { contains: nomeMadeira, mode: "insensitive" }
                 }
             }
-             if (req.query.nomeTamanho) {
+            if (req.query.nomeTamanho) {
                 where.tamanho = {
-                    nome: { contains:nomeTamanho, mode: "insensitive" }
+                    nome: { contains: nomeTamanho, mode: "insensitive" }
                 }
-            }                       
+            }
         }
-        
+
         produto = await prisma.produtos.findMany({
             where,
             include: {
@@ -545,7 +545,7 @@ app.get("/produtos/:id", async (req, res) => {
             where: {
                 id
             },
-            include:{
+            include: {
                 fornecedor: true,
                 madeira: true,
                 tamanho: true
@@ -562,7 +562,7 @@ app.get("/produtos/:id", async (req, res) => {
     }
 })
 
-    
+
 
 //DELETE / deletar os produtos existentes
 app.delete("/produtos/:id", async (req, res) => {
@@ -576,7 +576,7 @@ app.delete("/produtos/:id", async (req, res) => {
             }
         })
 
-        if(!produto) return res.status(400).json({message: "produto não encontrado"})
+        if (!produto) return res.status(400).json({ message: "produto não encontrado" })
 
         res.status(204).send()
 
@@ -622,20 +622,20 @@ app.put("/produtos/:id", async (req, res) => {
 //POST / madeiras
 app.post("/madeiras", async (req, res) => {
     try {
-          const { nome, fornecedorId } = req.body
+        const { nome, fornecedorId } = req.body
 
-          const madeira = await prisma.madeiras.create({
-             data: {
-               nome,
-               fornecedorId
-             },
+        const madeira = await prisma.madeiras.create({
+            data: {
+                nome,
+                fornecedorId
+            },
             include: {
-               fornecedor: true
-               }
-          })
+                fornecedor: true
+            }
+        })
 
         res.status(201).json(madeira)
-    }catch (error) {
+    } catch (error) {
         console.log('Erro:', error);
         res.status(400).json({ erro: error.message });
     }
@@ -751,7 +751,7 @@ app.post('/clientes', async (req, res) => {
         })
 
         res.status(201).json(Clientes)
-        
+
     } catch (error) {
         console.log('Erro:', error);
         res.status(400).json({ erro: error.message });
@@ -814,8 +814,8 @@ app.put("/clientes/:id", async (req, res) => {
         const { id } = req.params
         const { nome, email, cpf, telefone, cep, cidade, estado, bairro, rua, numero } = req.body
 
-        const item  = await prisma.clientes.findUnique({where:{id}})
-        if(!item) return res.status(400).json({erro: "Cliente não encontrado"})
+        const item = await prisma.clientes.findUnique({ where: { id } })
+        if (!item) return res.status(400).json({ erro: "Cliente não encontrado" })
 
         const clientes = await prisma.clientes.update({
             where: {
@@ -1306,226 +1306,246 @@ app.delete('/pecas/:id', async (req, res) => {
 
 // Define include padrão para itens de orçamento
 const includeOrcamentoE = {
-  orcamentoE: {
-    include: {
-      produto: { include: { fornecedor: true } },
-      peca: true,
-      estoqueMadeira: {
+    orcamentoE: {
         include: {
-          madeira: { include: { fornecedor: true } },
-          tamanho: true
+            produto: { include: { fornecedor: true } },
+            peca: true,
+            estoqueMadeira: {
+                include: {
+                    madeira: { include: { fornecedor: true } },
+                    tamanho: true
+                }
+            }
         }
-      }
     }
-  }
 };
 
 // Include completo para orçamentos
 const includeOrcamento = {
-  usuario: true,
-  cliente: true,
-  ...includeOrcamentoE
+    usuario: true,
+    cliente: true,
+    ...includeOrcamentoE
 };
 
 // POST /orcamentos
 app.post("/orcamentos", async (req, res) => {
-  try {
-    const { descricao, usuarioId, clienteId, valorTotal, orcamentoE } = req.body;
+    try {
+        const { descricao,
+            usuarioId,
+            clienteId,
+            valorTotal,
+            orcamentoE,
+            nome,
+            cep,
+            cpf,
+            estado,
+            cidade,
+            bairro,
+            rua,
+            numero } = req.body;
 
-    const orcamentoEComTotal = (orcamentoE || []).map(item => ({
-      ...item,
-      valorTotal: item.valorTotal ?? (item.quantidade || 0) * (item.valorVenda || 0),
-    }));
+        const orcamentoEComTotal = (orcamentoE || []).map(item => ({
+            ...item,
+            valorTotal: item.valorTotal ?? (item.quantidade || 0) * (item.valorVenda || 0),
+        }));
 
-    const valorTotalCalculado = orcamentoEComTotal.reduce(
-      (acc, item) => acc + item.valorTotal,
-      0
-    );
+        const valorTotalCalculado = orcamentoEComTotal.reduce(
+            (acc, item) => acc + item.valorTotal,
+            0
+        );
 
-    const orcamentoSalvo = await prisma.$transaction(async (tx) => {
-      return await tx.orcamento.create({
-        data: {
-          descricao,
-          usuarioId,
-          clienteId,
-          valorTotal: valorTotal ?? valorTotalCalculado,
-          orcamentoE: { create: orcamentoEComTotal }
-        },
-        include: includeOrcamento
-      });
-    });
+        const orcamentoSalvo = await prisma.$transaction(async (tx) => {
+            return await tx.orcamento.create({
+                data: {
+                    descricao,
+                    usuarioId,
+                    clienteId,
+                    nome,
+                    cep,
+                    cpf,
+                    estado,
+                    cidade,
+                    bairro,
+                    rua,
+                    numero,
+                    valorTotal: valorTotal ?? valorTotalCalculado,
+                    orcamentoE: { create: orcamentoEComTotal }
+                },
+                include: includeOrcamento
+            });
+        });
 
-    res.status(201).json(orcamentoSalvo);
-  } catch (error) {
-    console.error("❌ Erro POST /orcamentos:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(201).json(orcamentoSalvo);
+    } catch (error) {
+        console.error("❌ Erro POST /orcamentos:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // GET /orcamentos
 app.get("/orcamentos", async (req, res) => {
-  try {
-    const where = {};
-    const orcamentoEConditions = [];
+    try {
+        const where = {};
+        const orcamentoEConditions = [];
 
-    if (req.query.nomeUsuario) where.usuario = { nome: { contains: req.query.nomeUsuario, mode: "insensitive" } };
-    if (req.query.nomeCliente) where.cliente = { nome: { contains: req.query.nomeCliente, mode: "insensitive" } };
-    if (req.query.nomeProduto) orcamentoEConditions.push({ produto: { nome: { contains: req.query.nomeProduto, mode: "insensitive" } } });
-    if (req.query.nomePeca) orcamentoEConditions.push({ peca: { nome: { contains: req.query.nomePeca, mode: "insensitive" } } });
-    if (req.query.nomeMadeira) orcamentoEConditions.push({ estoqueMadeira: { madeira: { nome: { contains: req.query.nomeMadeira, mode: "insensitive" } } } });
+        if (req.query.nomeUsuario) where.usuario = { nome: { contains: req.query.nomeUsuario, mode: "insensitive" } };
+        if (req.query.nomeCliente) where.cliente = { nome: { contains: req.query.nomeCliente, mode: "insensitive" } };
+        if (req.query.nomeProduto) orcamentoEConditions.push({ produto: { nome: { contains: req.query.nomeProduto, mode: "insensitive" } } });
+        if (req.query.nomePeca) orcamentoEConditions.push({ peca: { nome: { contains: req.query.nomePeca, mode: "insensitive" } } });
+        if (req.query.nomeMadeira) orcamentoEConditions.push({ estoqueMadeira: { madeira: { nome: { contains: req.query.nomeMadeira, mode: "insensitive" } } } });
 
-    if (orcamentoEConditions.length > 0) where.orcamentoE = { some: { OR: orcamentoEConditions } };
-    if (req.query.descricao) where.descricao = { contains: req.query.descricao, mode: "insensitive" };
+        if (orcamentoEConditions.length > 0) where.orcamentoE = { some: { OR: orcamentoEConditions } };
+        if (req.query.descricao) where.descricao = { contains: req.query.descricao, mode: "insensitive" };
 
-    const orcamentos = await prisma.orcamento.findMany({
-      where,
-      include: includeOrcamento,
-      orderBy: { dataCriacao: "desc" }
-    });
+        const orcamentos = await prisma.orcamento.findMany({
+            where,
+            include: includeOrcamento,
+            orderBy: { dataCriacao: "desc" }
+        });
 
-    res.status(200).json(orcamentos);
-  } catch (error) {
-    console.error("Erro GET /orcamentos:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(200).json(orcamentos);
+    } catch (error) {
+        console.error("Erro GET /orcamentos:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // GET /orcamentos/:id
 app.get("/orcamentos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    const orcamento = await prisma.orcamento.findUnique({
-      where: { id },
-      include: includeOrcamento
-    });
+        const orcamento = await prisma.orcamento.findUnique({
+            where: { id },
+            include: includeOrcamento
+        });
 
-    if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
+        if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
 
-    orcamento.valorTotalCalculado = orcamento.orcamentoE.reduce((acc, e) => acc + (e.valorTotal || 0), 0);
+        orcamento.valorTotalCalculado = orcamento.orcamentoE.reduce((acc, e) => acc + (e.valorTotal || 0), 0);
 
-    res.status(200).json(orcamento);
-  } catch (error) {
-    console.error("Erro GET /orcamentos/:id:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(200).json(orcamento);
+    } catch (error) {
+        console.error("Erro GET /orcamentos/:id:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // PUT /orcamentos/:id
 app.put("/orcamentos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { descricao, clienteId, valorTotal } = req.body;
+    try {
+        const { id } = req.params;
+        const { descricao, clienteId, valorTotal } = req.body;
 
-    const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
-      return await tx.orcamento.update({
-        where: { id },
-        data: { descricao, clienteId, valorTotal },
-        include: includeOrcamento
-      });
-    });
+        const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
+            return await tx.orcamento.update({
+                where: { id },
+                data: { descricao, clienteId, valorTotal },
+                include: includeOrcamento
+            });
+        });
 
-    res.status(201).json(orcamentoAtualizado);
-  } catch (error) {
-    console.error("Erro PUT /orcamentos/:id:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(201).json(orcamentoAtualizado);
+    } catch (error) {
+        console.error("Erro PUT /orcamentos/:id:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // POST /orcamentos/:id/orcamentosE
 app.post("/orcamentos/:id/orcamentosE", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { orcamentoE } = req.body;
+    try {
+        const { id } = req.params;
+        const { orcamentoE } = req.body;
 
-    const resultado = await prisma.$transaction(async (tx) => {
-      const novoItem = await tx.orcamento.update({
-        where: { id },
-        data: { orcamentoE: { create: orcamentoE } },
-        include: includeOrcamento
-      });
+        const resultado = await prisma.$transaction(async (tx) => {
+            const novoItem = await tx.orcamento.update({
+                where: { id },
+                data: { orcamentoE: { create: orcamentoE } },
+                include: includeOrcamento
+            });
 
-      // Recalcula total
-      const itens = await tx.orcamentoE.findMany({ where: { orcamentoId: id } });
-      const valorTotalAtualizado = itens.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
-      await tx.orcamento.update({ where: { id }, data: { valorTotal: valorTotalAtualizado } });
+            // Recalcula total
+            const itens = await tx.orcamentoE.findMany({ where: { orcamentoId: id } });
+            const valorTotalAtualizado = itens.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
+            await tx.orcamento.update({ where: { id }, data: { valorTotal: valorTotalAtualizado } });
 
-      return novoItem;
-    });
+            return novoItem;
+        });
 
-    res.status(201).json(resultado);
-  } catch (error) {
-    console.error("Erro POST /orcamentos/:id/orcamentosE:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(201).json(resultado);
+    } catch (error) {
+        console.error("Erro POST /orcamentos/:id/orcamentosE:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // DELETE /orcamentos/:id
 app.delete("/orcamentos/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    await prisma.$transaction(async (tx) => {
-      await tx.orcamentoE.deleteMany({ where: { orcamentoId: id } });
-      await tx.orcamento.delete({ where: { id } });
-    });
+        await prisma.$transaction(async (tx) => {
+            await tx.orcamentoE.deleteMany({ where: { orcamentoId: id } });
+            await tx.orcamento.delete({ where: { id } });
+        });
 
-    res.status(201).json({ message: "Orçamento deletado com sucesso" });
-  } catch (error) {
-    console.error("Erro DELETE /orcamentos/:id:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(201).json({ message: "Orçamento deletado com sucesso" });
+    } catch (error) {
+        console.error("Erro DELETE /orcamentos/:id:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // PUT /orcamentosE/:id
 app.put("/orcamentosE/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { estoqueMadeiraId, produtoId, pecaId, quantidade, valorVenda, valorTotal } = req.body;
+    try {
+        const { id } = req.params;
+        const { estoqueMadeiraId, produtoId, pecaId, quantidade, valorVenda, valorTotal } = req.body;
 
-    const itemAtualizado = await prisma.$transaction(async (tx) => {
-      const atual = await tx.orcamentoE.update({
-        where: { id },
-        data: { estoqueMadeiraId, produtoId, pecaId, quantidade, valorVenda, valorTotal }
-      });
+        const itemAtualizado = await prisma.$transaction(async (tx) => {
+            const atual = await tx.orcamentoE.update({
+                where: { id },
+                data: { estoqueMadeiraId, produtoId, pecaId, quantidade, valorVenda, valorTotal }
+            });
 
-      // Recalcula total do orçamento pai
-      const itens = await tx.orcamentoE.findMany({ where: { orcamentoId: atual.orcamentoId } });
-      const valorTotalAtualizado = itens.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
-      await tx.orcamento.update({ where: { id: atual.orcamentoId }, data: { valorTotal: valorTotalAtualizado } });
+            // Recalcula total do orçamento pai
+            const itens = await tx.orcamentoE.findMany({ where: { orcamentoId: atual.orcamentoId } });
+            const valorTotalAtualizado = itens.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
+            await tx.orcamento.update({ where: { id: atual.orcamentoId }, data: { valorTotal: valorTotalAtualizado } });
 
-      return atual;
-    });
+            return atual;
+        });
 
-    res.status(201).json(itemAtualizado);
-  } catch (error) {
-    console.error("Erro PUT /orcamentosE/:id:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(201).json(itemAtualizado);
+    } catch (error) {
+        console.error("Erro PUT /orcamentosE/:id:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 // DELETE /orcamentosE/:id
 app.delete("/orcamentosE/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+        const { id } = req.params;
 
-    const resultado = await prisma.$transaction(async (tx) => {
-      const item = await tx.orcamentoE.findUnique({ where: { id } });
-      if (!item) throw new Error("Item de orçamento não encontrado");
+        const resultado = await prisma.$transaction(async (tx) => {
+            const item = await tx.orcamentoE.findUnique({ where: { id } });
+            if (!item) throw new Error("Item de orçamento não encontrado");
 
-      await tx.orcamentoE.delete({ where: { id } });
+            await tx.orcamentoE.delete({ where: { id } });
 
-      const itensRestantes = await tx.orcamentoE.findMany({ where: { orcamentoId: item.orcamentoId } });
-      const valorTotalAtualizado = itensRestantes.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
+            const itensRestantes = await tx.orcamentoE.findMany({ where: { orcamentoId: item.orcamentoId } });
+            const valorTotalAtualizado = itensRestantes.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
 
-      return await tx.orcamento.update({ where: { id: item.orcamentoId }, data: { valorTotal: valorTotalAtualizado } });
-    });
+            return await tx.orcamento.update({ where: { id: item.orcamentoId }, data: { valorTotal: valorTotalAtualizado } });
+        });
 
-    res.status(200).json({ message: "Item de orçamento deletado com sucesso", orcamento: resultado });
-  } catch (error) {
-    console.error("❌ Erro DELETE /orcamentosE/:id:", error.message);
-    res.status(400).json({ message: error.message });
-  }
+        res.status(200).json({ message: "Item de orçamento deletado com sucesso", orcamento: resultado });
+    } catch (error) {
+        console.error("❌ Erro DELETE /orcamentosE/:id:", error.message);
+        res.status(400).json({ message: error.message });
+    }
 });
 
 //#endregion
