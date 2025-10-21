@@ -18,8 +18,8 @@ if (fs.existsSync(hashPath)) {
 }
 
 if (newHash !== oldHash) {
-  console.log('Schema alterado! Gerando Prisma e aplicando DB push...');
-  execSync('npx prisma generate && npx prisma db push', { stdio: 'inherit' });
+  console.log('Schema alterado! Gerando Prisma e aplicando DB generate...');
+  execSync('npx prisma generate', { stdio: 'inherit' });
   fs.writeFileSync(hashPath, newHash);
 } else {
   console.log('Sem alterações no schema. Nada a fazer.');
