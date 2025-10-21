@@ -1390,12 +1390,17 @@ app.get("/orcamentos", async (req, res) => {
 
         if (req.query.nomeUsuario) where.usuario = { nome: { contains: req.query.nomeUsuario, mode: "insensitive" } };
         if (req.query.nomeCliente) where.cliente = { nome: { contains: req.query.nomeCliente, mode: "insensitive" } };
+        if (req.query.descricao) where.descricao = { contains: req.query.descricao, mode: "insensitive" };
+        if (req.query.nome) where.nome = { contains: req.query.nome, mode: "insensitive" };
+        if (req.query.cpf) where.cpf = { contains: req.query.cpf, mode: "insensitive" };
+        if (req.query.estado) where.estado = { contains: req.query.estado, mode: "insensitive" };
+        if (req.query.cidade) where.cidade = { contains: req.query.cidade, mode: "insensitive" };
+
         if (req.query.nomeProduto) orcamentoEConditions.push({ produto: { nome: { contains: req.query.nomeProduto, mode: "insensitive" } } });
         if (req.query.nomePeca) orcamentoEConditions.push({ peca: { nome: { contains: req.query.nomePeca, mode: "insensitive" } } });
         if (req.query.nomeMadeira) orcamentoEConditions.push({ estoqueMadeira: { madeira: { nome: { contains: req.query.nomeMadeira, mode: "insensitive" } } } });
 
         if (orcamentoEConditions.length > 0) where.orcamentoE = { some: { OR: orcamentoEConditions } };
-        if (req.query.descricao) where.descricao = { contains: req.query.descricao, mode: "insensitive" };
 
         const orcamentos = await prisma.orcamento.findMany({
             where,
@@ -1435,12 +1440,24 @@ app.get("/orcamentos/:id", async (req, res) => {
 app.put("/orcamentos/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { descricao, clienteId, valorTotal } = req.body;
+        const { descricao, clienteId, valorTotal, nome, cpf, cep, cidade, estado, rua, numero, telefone } = req.body;
 
         const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
             return await tx.orcamento.update({
                 where: { id },
-                data: { descricao, clienteId, valorTotal },
+                data: {
+                    descricao,
+                    clienteId,
+                    valorTotal,
+                    nome,
+                    cpf,
+                    cep,
+                    cidade,
+                    estado,
+                    rua,
+                    numero,
+                    telefone
+                },
                 include: includeOrcamento
             });
         });
@@ -1560,7 +1577,7 @@ app.delete("/orcamentosE/:id", async (req, res) => {
 // Cria uma venda a partir do body. body pode conter vendaE: [ { produtoId|pecaId|estoqueMadeiraId, quantidade, valorVenda, valorTotal } ]
 app.post("/vendas", async (req, res) => {
     try {
-        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, vendaE } = req.body;
+        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, vendaE, nome, cpf, cep, estado, cidade, bairro, rua, numero, telefone } = req.body;
 
         // 🔹 Calcula valorTotal de cada item
         const vendaEComTotal = (vendaE || []).map(item => ({
@@ -1612,6 +1629,15 @@ app.post("/vendas", async (req, res) => {
                     descricao,
                     usuarioId,
                     clienteId,
+                    nome,
+                    cpf,
+                    cep,
+                    estado,
+                    cidade,
+                    bairro,
+                    rua,
+                    numero,
+                    telefone,
                     valorTotal: valorTotal ?? valorTotalCalculado,
                     dataPagamento: dataPagamentoFormatada,
                     pago: pago === "true" || pago === true,
@@ -1667,7 +1693,7 @@ app.post("/vendas", async (req, res) => {
 app.post("/vendas/from-orcamento/:id", async (req, res) => {
     try {
         const { id } = req.params; // id do orçamento
-        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal } = req.body;
+        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, nome, cpf, cep, estado, cidade, bairro, rua, numero,telefone } = req.body;
 
         const orcamento = await prisma.orcamento.findUnique({
             where: { id },
@@ -1721,6 +1747,15 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
                     descricao: descricao || orcamento.descricao || `Venda a partir do orçamento ${id}`,
                     usuarioId: usuarioId || orcamento.usuarioId,
                     clienteId: clienteId || orcamento.clienteId,
+                    nome: nome || orcamento.nome,
+                    cpf: cpf || orcamento.cpf,
+                    cep: cep || orcamento.cep,
+                    estado: estado || orcamento.estado,
+                    cidade: cidade || orcamento.cidade,
+                    bairro: bairro || orcamento.bairro,
+                    rua: rua || orcamento.rua,
+                    numero: numero || orcamento.numero,
+                    telefone: telefone || orcamento.telefone,
                     valorTotal: valorTotalCalculado,
                     dataPagamento: dataPagamentoFormatada,
                     pago: !!pago,
@@ -1770,8 +1805,14 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
 // Busca vendas com filtros opcionais: nomeCliente, nomeUsuario, dataInicio, dataFim, pago=true/false
 app.get("/vendas", async (req, res) => {
     try {
-        const { nomeCliente, nomeUsuario, dataInicio, dataFim, pago, nomeMadeira, nomeProduto, nomePeca } = req.query;
+        const { nomeCliente, nomeUsuario, dataInicio, dataFim, pago, nomeMadeira, nomeProduto, nomePeca, nome, cpf, cep, estado, cidade, bairro } = req.query;
         const where = {};
+
+        if (nome) where.nome = { contains: nome, mode: "insensitive" };
+        if (cpf) where.cpf = { contains: cpf, mode: "insensitive" };
+        if (estado) where.estado = { contains: estado, mode: "insensitive" };
+        if (cidade) where.cidade = { contains: cidade, mode: "insensitive" };
+        if (bairro) where.bairro = { contains: bairro, mode: "insensitive" };
 
         if (nomeCliente) {
             where.cliente = { nome: { contains: nomeCliente, mode: "insensitive" } };
@@ -1883,7 +1924,7 @@ app.get("/vendas/:id", async (req, res) => {
 app.put("/vendas/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { descricao, clienteId, usuarioId, dataPagamento, pago } = req.body;
+        const { descricao, clienteId, usuarioId, dataPagamento, pago, nome, cpf, cep, estado, cidade, rua, numero, telefone } = req.body;
 
         // 🔹 formata  a data corretamente
         const dataPagamentoFormatada = dataPagamento
@@ -1897,6 +1938,14 @@ app.put("/vendas/:id", async (req, res) => {
                 descricao,
                 clienteId,
                 usuarioId,
+                nome,
+                cpf,
+                cep,
+                estado,
+                cidade,
+                rua,
+                numero,
+                telefone,
                 dataPagamento: dataPagamentoFormatada || null,
                 pago: typeof pago === "boolean" ? pago : undefined
             },
@@ -1928,6 +1977,7 @@ app.delete("/vendas/:id", async (req, res) => {
         const { id } = req.params;
 
         await prisma.vendas.delete({ where: { id } });
+        await prisma.vendasE.deleteMany({ where: { vendaId: id } });
 
         // se quiser reverter o estoque aqui, essa é a hora de fazê-lo (buscar vendaE e incrementar de volta)
         res.status(204).send();
