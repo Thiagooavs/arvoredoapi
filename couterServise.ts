@@ -1,11 +1,8 @@
-// counterService
-import { PrismaClient } from './generated/prisma/client.js'
-
+import { PrismaClient, Counter } from "./generated/prisma";
 
 const prisma = new PrismaClient();
 
 export async function getNextId(counterName: string): Promise<number> {
-  // Busca ou cria o contador
   const counter = await prisma.counter.upsert({
     where: { name: counterName },
     update: {
@@ -16,6 +13,6 @@ export async function getNextId(counterName: string): Promise<number> {
       value: 1
     }
   });
-//a
+
   return counter.value;
 }
