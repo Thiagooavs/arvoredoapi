@@ -1,5 +1,6 @@
-// counterService.ts
-import { PrismaClient } from './generated/prisma/client.js'
+// counterService
+import { PrismaClient } from "./generated/prisma";
+
 
 const prisma = new PrismaClient();
 
