@@ -132,12 +132,13 @@ model Tamanhos {
 }
 
 model EstoqueMadeiras {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  madeiraId  Int      @map("madeira") 
-  tamanhoId  Int      @map("tamanho") 
-  quantidade Int      @default(0)
-  acabando   Boolean  @default(false)
-  ativo      Boolean  @default(true)
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  madeiraId      Int      @map("madeira") 
+  tamanhoId      Int      @map("tamanho") 
+  quantidade     Int      @default(0)
+  quantidadeMin  Int      @default(5)
+  acabando       Boolean  @default(false)
+  ativo          Boolean  @default(true)
 
   madeira    Madeiras? @relation(fields: [madeiraId], references: [id])
   tamanho    Tamanhos? @relation(fields: [tamanhoId], references: [id])

@@ -708,17 +708,21 @@ app.get("/madeiras", async (req, res) => {
         let madeira = []
         if (Object.keys(req.query).length > 0) {
 
+            const {nome,nomeFornecedor,ativo} = req.query
             const where = {}
 
-            if (req.query.nome) where.nome = { contains: req.query.nome, mode: "insensitive" }
+            if (nome) where.nome = { contains: nome, mode: "insensitive" }
 
-            if (req.query.nomeFornecedor) {
+            if (nomeFornecedor) {
                 where.fornecedor = {
-                    nome: { contains: req.query.nomeFornecedor, mode: "insensitive" }
+                    nome: { contains: nomeFornecedor, mode: "insensitive" }
                 }
             }
 
-            if (req.query.ativo) where.ativo = req.query.ativo
+            if (typeof ativo !== "undefined") {
+            // aceita 'true' / 'false' strings
+            where.ativo = ativo === "true";
+        }
 
             madeira = await prisma.madeiras.findMany({
                 where,
@@ -984,11 +988,24 @@ Tamanhos
 //POST / tamanhos
 app.post("/tamanhos", async (req, res) => {
     try {
+
         const { nome } = req.body
+        
+        const repetido = await prisma.tamanhos.findMany({
+            where:{
+                nome,
+                ativo: true
+            }
+        })
+
+        if(repetido.length > 0) return res.status(404).json({error: "tamanho já existente"});
+
+        const tamanhoId = await getNextId('tamanhos')
 
         const tamanhos = await prisma.tamanhos.create({
             data: {
-                nome
+                nome,
+                id: tamanhoId
             }
         })
 
@@ -1002,19 +1019,22 @@ app.post("/tamanhos", async (req, res) => {
 //Get / tamanhos
 app.get("/tamanhos", async (req, res) => {
     try {
+        const {nome,ativo} = req.query
+        const where = {}
 
-        const { nome } = req.query
+        if(nome) where.nome = {contains: nome, mode: "insensitive"}
+        if (typeof ativo !== "undefined") {
+            // aceita 'true' / 'false' strings
+            where.ativo = ativo === "true";
+        }
+
         let tamanhos = []
 
-        if (req.query) {
+        
             tamanhos = await prisma.tamanhos.findMany({
-                where: {
-                    nome: { contains: nome, mode: "insensitive" }
-                }
+                where
             })
-        } else {
-            tamanhos = await prisma.tamanhos.findMany()
-        }
+      
 
         res.status(200).json(tamanhos)
     } catch (error) {
@@ -1026,7 +1046,9 @@ app.get("/tamanhos", async (req, res) => {
 //GET pelo id / tamanhos
 app.get('/tamanhos/:id', async (req, res) => {
     try {
-        const { id } = req.params
+       const id = parseInt(req.params.id); //converte string em int
+        if (isNaN(id)) return res.status(404).json({ error: 'ID inválido' });
+        
         const tamanho = await prisma.tamanhos.findUnique({
             where: {
                 id
@@ -1047,7 +1069,18 @@ app.get('/tamanhos/:id', async (req, res) => {
 //DELETE /tamanhos
 app.delete("/tamanhos/:id", async (req, res) => {
     try {
-        const { id } = req.params
+        const id = parseInt(req.params.id); //converte string em int
+        if (isNaN(id)) return res.status(404).json({ error: 'ID inválido' });
+
+        const tamanho = await prisma.tamanhos.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!tamanho) {
+            return res.status(400).json({ erro: "tamanho não encontrado" })
+        }
 
         await prisma.tamanhos.delete({
             where: {
@@ -1073,13 +1106,16 @@ EstoqueMadeiras
 // POST /estoquemadeiras - Criar estoque de madeira
 app.post("/estoquemadeiras", async (req, res) => {
     try {
-        const { madeiraId, tamanhoId, quantidade } = req.body;
+        const { madeiraId, tamanhoId, quantidade,quantidadeMin } = req.body;
 
+        const estoqueMadeiraId = getNextId('estoqueMadeiras')
         const estoqueMadeira = await prisma.estoqueMadeiras.create({
             data: {
+                id: estoqueMadeiraId,
                 madeiraId,
                 tamanhoId,
-                quantidade
+                quantidade,
+                quantidadeMin
             },
             include: {
                 madeira: true,
