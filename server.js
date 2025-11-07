@@ -1574,7 +1574,7 @@ app.delete("/orcamentosE/:id", async (req, res) => {
             return await tx.orcamento.update({ where: { id: item.orcamentoId }, data: { valorTotal: valorTotalAtualizado } });
         });
 
-        res.status(204);
+        res.status(204).send();
     } catch (error) {
         console.error("❌ Erro DELETE /orcamentosE/:id:", error.message);
         res.status(400).json({ message: error.message });
