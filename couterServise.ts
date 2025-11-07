@@ -16,6 +16,6 @@ export async function getNextId(counterName: string): Promise<number> {
       value: 1
     }
   });
-
+//a
   return counter.value;
 }
