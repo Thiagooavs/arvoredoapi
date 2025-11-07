@@ -1690,8 +1690,6 @@ app.post("/vendas", async (req, res) => {
                 data: {
                     id: vendaId,
                     descricao,
-                    usuarioId,
-                    clienteId,
                     nome,
                     cpf,
                     cep,
@@ -1703,6 +1701,8 @@ app.post("/vendas", async (req, res) => {
                     telefone,
                     valorTotal: valorTotal ?? valorTotalCalculado,
                     dataPagamento: dataPagamentoFormatada,
+                    usuario: {connect: {id: usuarioId}},
+                    ...(clienteId ? { cliente: { connect: { id: clienteId } } } : {}),
                     pago: pago === "true" || pago === true,
                     vendaE: {
                         create: vendaEComIds,

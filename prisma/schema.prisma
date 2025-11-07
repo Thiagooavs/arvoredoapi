@@ -226,7 +226,7 @@ model Vendas {
   id                Int    @id  @map("_id")
   descricao         String?
   usuarioId         Int      @map("usuario") 
-  clienteId         String   @map("cliente") @db.ObjectId
+  clienteId         String?  @map("cliente") @db.ObjectId
   nome              String?
   cpf               String?
   cep               String?
