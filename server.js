@@ -84,19 +84,19 @@ app.get("/", (req, res) => {
     res.send("API rodando!");
 });
 
-async function  getNextId( counterName) {
-  const counter = await prisma.counter.upsert({
-    where: { name: counterName },
-    update: {
-      value: { increment: 1 }
-    },
-    create: {
-      name: counterName,
-      value: 1
-    }
-  });
+async function getNextId(counterName) {
+    const counter = await prisma.counter.upsert({
+        where: { name: counterName },
+        update: {
+            value: { increment: 1 }
+        },
+        create: {
+            name: counterName,
+            value: 1
+        }
+    });
 
-  return counter.value;
+    return counter.value;
 }
 
 //#region Usuarios
@@ -112,8 +112,16 @@ Usuario
 app.post('/usuarios', async (req, res) => {
     const { login, senha, nome, email, nivelAcesso } = req.body
 
+    const repetido = await prisma.usuarios.findMany({
+        where: {
+            login
+        }
+    })
+
+    if (repetido.length > 0) return res.json({ message: "email repetido" });
+
     // 🔸 Gera o ID para a venda principal
-            const usuarioId = await getNextId('usuarios');
+    const usuarioId = await getNextId('usuarios');
 
     await prisma.usuarios.create({
         data: {
@@ -177,9 +185,20 @@ app.get('/usuarios/:id', async (req, res) => {
 
 //editar usuarios em route paramiter
 //ex: servidor.com/usuarios/22
-app.put('/usuarios/:id', async (req, res) => {
 
-    const { id } = req.params
+app.put('/usuarios/:id', async (req, res) => {
+    const id = parseInt(req.params.id); //converte string em int
+
+    if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+
+    const usuarios = await prisma.usuarios.findUnique({
+        where: {
+            id
+        }
+    })
+
+    if (!usuarios) return res.status(400).json({ error: "Usuario não encontrado" })
+
     const { nome, login, senha, email, nivelAcesso } = req.body
 
     await prisma.usuarios.update({
@@ -202,9 +221,20 @@ app.put('/usuarios/:id', async (req, res) => {
 //deletar usuarios em route paramiter
 //ex: servidor.com/usuarios/22
 app.delete('/usuarios/:id', async (req, res) => {
+    const id = parseInt(req.params.id)
+    if(isNaN(id)) return res.status(404).json({error: "ID inválido"})
+
+    const usuarios = await prisma.usuarios.findUnique({
+        where: {
+            id
+        }
+    })
+
+    if (!usuarios) return res.status(400).json({ error: "Usuario não encontrado" })
+
     await prisma.usuarios.delete({
         where: {
-            id: req.params.id //vai pegar o id do usuario que eu quero deletar, pelo link
+            id: id //vai pegar o id do usuario que eu quero deletar, pelo link
         }
     })
 
@@ -1726,7 +1756,7 @@ app.post("/vendas", async (req, res) => {
 app.post("/vendas/from-orcamento/:id", async (req, res) => {
     try {
         const { id } = req.params; // id do orçamento
-        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, nome, cpf, cep, estado, cidade, bairro, rua, numero,telefone } = req.body;
+        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, nome, cpf, cep, estado, cidade, bairro, rua, numero, telefone } = req.body;
 
         const orcamento = await prisma.orcamento.findUnique({
             where: { id },
