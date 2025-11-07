@@ -164,8 +164,8 @@ app.get('/usuarios', async (req, res) => {
 //GET by id / usuarios
 app.get('/usuarios/:id', async (req, res) => {
     try {
-
-        const { id } = req.params
+        const id = parseInt(req.params.id); //converte string em int
+        if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
         const usuarios = await prisma.usuarios.findUnique({
             where: {
@@ -222,7 +222,7 @@ app.put('/usuarios/:id', async (req, res) => {
 //ex: servidor.com/usuarios/22
 app.delete('/usuarios/:id', async (req, res) => {
     const id = parseInt(req.params.id)
-    if(isNaN(id)) return res.status(404).json({error: "ID inválido"})
+    if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
 
     const usuarios = await prisma.usuarios.findUnique({
         where: {
@@ -376,7 +376,7 @@ app.delete("/fornecedores/:id", async (req, res) => {
             }
         })
 
-        res.status(200).json({ message: "Fornecedor deletado comsucesso!" })
+        res.status(204).send();
 
     } catch (error) {
         console.log('Erro:', error);
@@ -674,9 +674,20 @@ app.put("/produtos/:id", async (req, res) => {
 app.post("/madeiras", async (req, res) => {
     try {
         const { nome, fornecedorId } = req.body
+        const madeiraId = await getNextId('madeiras')
+
+        const repetido = await prisma.madeiras.findMany({
+            where: {
+                nome,
+                ativo: true
+            }
+        })
+
+        if (repetido.length > 0) return res.status(404).json({ error: "madeira com esse nome já existente" })
 
         const madeira = await prisma.madeiras.create({
             data: {
+                id: madeiraId,
                 nome,
                 fornecedorId
             },
@@ -707,6 +718,8 @@ app.get("/madeiras", async (req, res) => {
                 }
             }
 
+            if (req.query.ativo) where.ativo = req.query.ativo
+
             madeira = await prisma.madeiras.findMany({
                 where,
                 include: {
@@ -735,7 +748,8 @@ app.get("/madeiras", async (req, res) => {
 app.get("/madeiras/:id", async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id); //converte string em int
+        if (isNaN(id)) return res.status(404).json({ error: 'ID inválido' });
 
         const madeira = await prisma.madeiras.findUnique({
             where: {
@@ -743,7 +757,7 @@ app.get("/madeiras/:id", async (req, res) => {
             }
         })
 
-        if (!madeira) return res.status(400).json({ message: "produto não encontrado" })
+        if (!madeira) return res.status(400).json({ message: "madeira não encontrado" })
 
         res.status(200).json(madeira)
 
@@ -753,11 +767,56 @@ app.get("/madeiras/:id", async (req, res) => {
     }
 })
 
+//PUT /madeiras
+app.put("/madeiras/:id", async (req, res) => {
+    try {
+        const id = parseInt(req.params.id); //converte string em int
+        if (isNaN(id)) return res.status(404).json({ error: 'ID inválido' });
+
+        const madeira = await prisma.madeiras.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!madeira) return res.status(400).json({ message: "madeira não encontrado" })
+
+        const { nome, ativo } = req.body
+
+        const madeiras = await prisma.madeiras.update({
+            where: {
+                id
+            },
+            data: {
+                nome,
+                ativo: typeof ativo === "boolean" ? ativo : undefined
+            }
+        })
+
+        res.status(201).json(madeiras)
+    } catch (error) {
+        console.log('Erro:', error);
+        res.status(400).json({ erro: error.message })
+    }
+
+
+})
+
 //DELETE / deletar as madeiras existentes
 app.delete("/madeiras/:id", async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id); //converte string em int
+        if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+
+        const madeira = await prisma.madeiras.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!madeira) return res.status(400).json({ message: "madeira não encontrado" })
+
         await prisma.madeiras.delete({
             where: {
                 id
@@ -1155,7 +1214,7 @@ app.delete('/estoquemadeiras/:id', async (req, res) => {
             }
         })
 
-        res.status(201).json({ message: "Estoque excluido com sucesso" })
+        res.status(204).send();
 
     } catch (error) {
         console.log('Erro:', error);
@@ -1701,7 +1760,7 @@ app.post("/vendas", async (req, res) => {
                     telefone,
                     valorTotal: valorTotal ?? valorTotalCalculado,
                     dataPagamento: dataPagamentoFormatada,
-                    usuario: {connect: {id: usuarioId}},
+                    usuario: { connect: { id: usuarioId } },
                     ...(clienteId ? { cliente: { connect: { id: clienteId } } } : {}),
                     pago: pago === "true" || pago === true,
                     vendaE: {

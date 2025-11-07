@@ -39,16 +39,16 @@ model Usuarios {
 }
 
 model Fornecedores {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          Int   @id  @map("_id") 
   nome        String   @unique 
   cep         String   
   telefone    String?
   email       String?
-  cidade      String
-  estado      String
-  bairro      String
-  rua         String
-  numero      Int
+  cidade      String?
+  estado      String?
+  bairro      String?
+  rua         String?
+  numero      Int?
   descricao   String
   ativo       Boolean  @default(true)
   
@@ -62,16 +62,17 @@ model Fornecedores {
 }
 
 model Produtos {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  id             Int   @id @map("_id") 
   nome           String   @unique
-  madeiraid      String?  @map("madeira") @db.ObjectId
-  tamanhoid      String?  @map("tamanho") @db.ObjectId
+  madeiraid      Int?     @map("madeira") 
+  tamanhoid      Int?     @map("tamanho")
   valor          Float
-  unidade        String?
-  quantidade     Int?     @default(0)
-  quantidadeMin  Int?     @default(0)
-  acabando       Boolean? @default(false)
-  fornecedorId   String?   @map("fornecedor") @db.ObjectId  // ← adicione @db.ObjectId aqui!
+  unidade        String
+  quantidade     Int     @default(0)
+  quantidadeMin  Int     @default(0)
+  ativo          Boolean @default(true)
+  acabando       Boolean @default(false)
+  fornecedorId   Int?   @map("fornecedor")   // ← adicione @db.ObjectId aqui!
 
   fornecedor    Fornecedores? @relation(fields: [fornecedorId], references: [id])
   madeira       Madeiras? @relation(fields: [madeiraid], references: [id])
@@ -90,9 +91,10 @@ model Produtos {
 }
 
 model Madeiras {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  id            Int   @id  @map("_id") 
   nome          String
-  fornecedorId  String?   @map("fornecedor") @db.ObjectId
+  ativo         Boolean @default(true)
+  fornecedorId  Int?   @map("fornecedor") 
 
   fornecedor    Fornecedores? @relation(fields: [fornecedorId], references: [id])
 
@@ -119,8 +121,9 @@ model Pecas {
 }
 
 model Tamanhos {
-  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  id              Int            @id @map("_id") 
   nome            String
+  ativo           Boolean        @default(true)
   
   estoqueMadeiras EstoqueMadeiras[]
   produtos       Produtos[]
@@ -130,10 +133,11 @@ model Tamanhos {
 
 model EstoqueMadeiras {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  madeiraId  String   @map("madeira") @db.ObjectId
-  tamanhoId  String   @map("tamanho") @db.ObjectId
+  madeiraId  Int      @map("madeira") 
+  tamanhoId  Int      @map("tamanho") 
   quantidade Int      @default(0)
   acabando   Boolean  @default(false)
+  ativo      Boolean  @default(true)
 
   madeira    Madeiras? @relation(fields: [madeiraId], references: [id])
   tamanho    Tamanhos? @relation(fields: [tamanhoId], references: [id])
@@ -149,7 +153,7 @@ model EstoqueMadeiras {
 
 model EstoqueProdutos {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  produtoId  String?  @map("produto") @db.ObjectId
+  produtoId  Int?     @map("produto") 
   quantidade Int?     @default(0)
   acabando   Boolean  @default(false)
 
@@ -207,7 +211,7 @@ model OrcamentoE{
   id                  Int     @id  @map("_id") 
   orcamentoId         Int      @map("orcamento")
   estoqueMadeiraId    String?  @map("estoqueMadeira")  @db.ObjectId
-  produtoId           String?  @map("produto") @db.ObjectId
+  produtoId           Int?  @map("produto") 
   pecaId              String?  @map("peca") @db.ObjectId
   quantidade          Int?
   valorVenda          Float?
@@ -252,7 +256,7 @@ model VendasE{
   id                Int       @id  @map("_id")
   vendaId           Int       @map("venda") 
   estoqueMadeiraId  String?   @map("estoqueMadeira") @db.ObjectId
-  produtoId         String?   @map("produto") @db.ObjectId
+  produtoId         Int?      @map("produto") 
   pecaId            String?   @map("peca") @db.ObjectId
   quantidade        Int
   valorVenda        Float
