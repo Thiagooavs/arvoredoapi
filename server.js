@@ -1,6 +1,6 @@
 import express from 'express'
 import { PrismaClient } from './generated/prisma/client.js'
-import { getNextId } from './couterServise.js';
+//import { getNextId } from './couterServise.js';
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -83,6 +83,21 @@ mongodb+srv://thiago:etecjau@arvoredo.dkrq4wj.mongodb.net/?retryWrites=true&w=ma
 app.get("/", (req, res) => {
     res.send("API rodando!");
 });
+
+async function  getNextId( counterName) {
+  const counter = await prisma.counter.upsert({
+    where: { name: counterName },
+    update: {
+      value: { increment: 1 }
+    },
+    create: {
+      name: counterName,
+      value: 1
+    }
+  });
+
+  return counter.value;
+}
 
 //#region Usuarios
 /* 

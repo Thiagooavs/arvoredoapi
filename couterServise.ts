@@ -1,4 +1,4 @@
-import { PrismaClient} from "./generated/prisma/index";
+/*import { PrismaClient} from "./generated/prisma/index";
 
 const prisma = new PrismaClient();
 
@@ -15,4 +15,4 @@ export async function getNextId(counterName: string): Promise<number> {
   });
 
   return counter.value;
-}
+}*/
