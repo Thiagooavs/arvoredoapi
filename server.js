@@ -111,8 +111,13 @@ Usuario
 //criar o usuarios em body
 app.post('/usuarios', async (req, res) => {
     const { login, senha, nome, email, nivelAcesso } = req.body
+
+    // 🔸 Gera o ID para a venda principal
+            const usuarioId = await getNextId('usuarios');
+
     await prisma.usuarios.create({
         data: {
+            id: usuarioId,
             login,
             senha,
             nome,
@@ -1523,7 +1528,7 @@ app.delete("/orcamentos/:id", async (req, res) => {
             await tx.orcamento.delete({ where: { id } });
         });
 
-        res.status(201).json({ message: "Orçamento deletado com sucesso" });
+        res.status(204).send();
     } catch (error) {
         console.error("Erro DELETE /orcamentos/:id:", error.message);
         res.status(400).json({ message: error.message });

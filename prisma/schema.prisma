@@ -21,7 +21,7 @@ model Counter {
 }
 
 model Usuarios {
-  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  id    Int    @id  @map("_id") 
   login String @unique
   senha String
   nome  String
@@ -180,9 +180,9 @@ model Clientes {
 }
 
 model Orcamento {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  id              Int    @id  @map("_id") 
   descricao       String?
-  usuarioId       String   @map("usuario") @db.ObjectId
+  usuarioId       Int  @map("usuario") 
   clienteId       String?  @map("cliente") @db.ObjectId
   nome            String?
   cpf             String?
@@ -204,8 +204,8 @@ model Orcamento {
 }
 
 model OrcamentoE{
-  id                  String  @id  @default(auto()) @map("_id") @db.ObjectId
-  orcamentoId         String  @map("orcamento") @db.ObjectId
+  id                  Int     @id  @map("_id") 
+  orcamentoId         Int      @map("orcamento")
   estoqueMadeiraId    String?  @map("estoqueMadeira")  @db.ObjectId
   produtoId           String?  @map("produto") @db.ObjectId
   pecaId              String?  @map("peca") @db.ObjectId
@@ -225,7 +225,7 @@ model OrcamentoE{
 model Vendas {
   id                Int    @id  @map("_id")
   descricao         String?
-  usuarioId         String   @map("usuario") @db.ObjectId
+  usuarioId         Int      @map("usuario") 
   clienteId         String   @map("cliente") @db.ObjectId
   nome              String?
   cpf               String?
