@@ -1,5 +1,6 @@
 import express from 'express'
 import { PrismaClient } from './generated/prisma/client.js'
+import { getNextId } from './couterServise.js';
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -1558,7 +1559,7 @@ app.delete("/orcamentosE/:id", async (req, res) => {
             return await tx.orcamento.update({ where: { id: item.orcamentoId }, data: { valorTotal: valorTotalAtualizado } });
         });
 
-        res.status(200).json({ message: "Item de orçamento deletado com sucesso", orcamento: resultado });
+        res.status(204);
     } catch (error) {
         console.error("❌ Erro DELETE /orcamentosE/:id:", error.message);
         res.status(400).json({ message: error.message });
@@ -1623,9 +1624,21 @@ app.post("/vendas", async (req, res) => {
                 }
             }
 
+            // 🔸 Gera o ID para a venda principal
+            const vendaId = await getNextId('vendas');
+
+            // 🔸 Gera IDs para cada item de VendasE
+            const vendaEComIds = await Promise.all(
+                vendaEComTotal.map(async (item) => ({
+                    id: await getNextId('vendasE'),
+                    ...item
+                }))
+            );
+
             // 🔸 Cria a venda
             const novaVenda = await tx.vendas.create({
                 data: {
+                    id: vendaId,
                     descricao,
                     usuarioId,
                     clienteId,
@@ -1642,7 +1655,7 @@ app.post("/vendas", async (req, res) => {
                     dataPagamento: dataPagamentoFormatada,
                     pago: pago === "true" || pago === true,
                     vendaE: {
-                        create: vendaEComTotal,
+                        create: vendaEComIds,
                     },
                 },
                 include: {

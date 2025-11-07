@@ -14,6 +14,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Counter {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String @unique
+  value Int
+}
+
 model Usuarios {
   id    String @id @default(auto()) @map("_id") @db.ObjectId
   login String @unique
@@ -217,7 +223,7 @@ model OrcamentoE{
  }
 
 model Vendas {
-  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  id                Int    @id  @map("_id")
   descricao         String?
   usuarioId         String   @map("usuario") @db.ObjectId
   clienteId         String   @map("cliente") @db.ObjectId
@@ -243,8 +249,8 @@ model Vendas {
 }
 
 model VendasE{
-  id   String   @id  @default(auto()) @map("_id") @db.ObjectId
-  vendaId           String    @map("venda") @db.ObjectId
+  id                Int       @id  @map("_id")
+  vendaId           Int       @map("venda") 
   estoqueMadeiraId  String?   @map("estoqueMadeira") @db.ObjectId
   produtoId         String?   @map("produto") @db.ObjectId
   pecaId            String?   @map("peca") @db.ObjectId
