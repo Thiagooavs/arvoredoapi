@@ -64,8 +64,8 @@ model Fornecedores {
 model Produtos {
   id             Int   @id @map("_id") 
   nome           String   @unique
-  madeiraid      Int?     @map("madeira") 
-  tamanhoid      Int?     @map("tamanho")
+  madeiraId      Int?     @map("madeira") 
+  tamanhoId      Int?     @map("tamanho")
   valor          Float
   unidade        String
   quantidade     Int     @default(0)
@@ -75,8 +75,8 @@ model Produtos {
   fornecedorId   Int?   @map("fornecedor")   // ← adicione @db.ObjectId aqui!
 
   fornecedor    Fornecedores? @relation(fields: [fornecedorId], references: [id])
-  madeira       Madeiras? @relation(fields: [madeiraid], references: [id])
-  tamanho       Tamanhos? @relation(fields: [tamanhoid], references: [id])
+  madeira       Madeiras? @relation(fields: [madeiraId], references: [id])
+  tamanho       Tamanhos? @relation(fields: [tamanhoId], references: [id])
 
   estoqueProdutos  EstoqueProdutos[]  // ← adicione esta
   orcamentoE       OrcamentoE[]

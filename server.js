@@ -508,27 +508,45 @@ Produtos
 //POST / produtos
 app.post("/produtos", async (req, res) => {
     try {
-        const { nome, valor, quantidade, quantidadeMin, acabando, fornecedorId, madeiraid, tamanhoid } = req.body
+        const { nome, valor, quantidade, quantidadeMin, acabando, fornecedorId, madeiraId, tamanhoId, unidade } = req.body
 
-        const produto = await prisma.produtos.create({
-            data: {
+        const repetido = await prisma.produtos.findMany({
+            where: {
                 nome,
-                valor,
-                quantidade,
-                quantidadeMin,
-                acabando,
-                fornecedorId,
-                madeiraid,
-                tamanhoid
-            },
-            include: {
-                fornecedor: true,
-                madeira: true,
-                tamanho: true
+                ativo: true
             }
         })
 
-        res.status(201).json(produto)
+        if (repetido.length > 0) return res.status(400).json({ message: "esse produto já existe" })
+
+        const produtoSalvo = await prisma.$transaction(async (tx) => {
+
+            const produtoId = await getNextId("produtos");
+
+            const produto = await tx.produtos.create({
+                data: {
+                    id: produtoId,
+                    nome,
+                    valor,
+                    unidade,
+                    quantidade,
+                    quantidadeMin,
+                    acabando,
+                    fornecedorId,
+                    madeiraId,
+                    tamanhoId
+                },
+                include: {
+                    fornecedor: true,
+                    madeira: true,
+                    tamanho: true
+                }
+            })
+            return produto
+        })
+        
+        res.status(201).json(produtoSalvo)
+
 
     } catch (error) {
 
@@ -537,19 +555,21 @@ app.post("/produtos", async (req, res) => {
     }
 })
 
-
 //GET / produtos
 app.get("/produtos", async (req, res) => {
     try {
-        const { nome, quantidade, acabando, nomeFornecedor, nomeMadeira, nomeTamanho } = req.query
+        const { nome, quantidade, acabando, nomeFornecedor, nomeMadeira, nomeTamanho, ativo, unidade } = req.query
         let produto = []
         const where = {}
 
         if (Object.keys(req.query).length > 0) {
 
-            if (req.query.nome) where.nome = { contains: nome, mode: "insensitive" }
-            if (req.query.quantidade) where.quantidade = quantidade
-            if (req.query.acabando) where.acabando = acabando === 'true';
+            if (nome) where.nome = { contains: nome, mode: "insensitive" }
+            if (quantidade) where.quantidade = quantidade
+            if (acabando) where.acabando = acabando === 'true';
+            if (ativo) where.ativo = ativo === 'true';
+            if (unidade) where.unidade = {contains: unidade, mode: "insensitive"}
+
 
 
             if (req.query.nomeFornecedor) {
@@ -590,7 +610,9 @@ app.get("/produtos", async (req, res) => {
 app.get("/produtos/:id", async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id);
+
+        if (isNaN(id)) return res.status(404).json({ error: 'Id inválido' })
 
         const produto = await prisma.produtos.findUnique({
             where: {
@@ -613,21 +635,28 @@ app.get("/produtos/:id", async (req, res) => {
     }
 })
 
-
-
 //DELETE / deletar os produtos existentes
 app.delete("/produtos/:id", async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(404).json({ error: 'Id inválido' })
 
-        const produto = await prisma.produtos.delete({
+        const existe = await prisma.produtos.findUnique({
             where: {
-                id: id
+                id
             }
         })
 
-        if (!produto) return res.status(400).json({ message: "produto não encontrado" })
+        if (!existe) return res.status(400).json({ message: 'produto não existe' })
+
+        const produto = await prisma.produtos.delete({
+            where: {
+                id
+            }
+        })
+
+
 
         res.status(204).send()
 
@@ -640,8 +669,16 @@ app.delete("/produtos/:id", async (req, res) => {
 //PUT / produtos
 app.put("/produtos/:id", async (req, res) => {
     try {
-        const { id } = req.params
-        const { nome, valor, quantidade, quantidadeMin, acabando, fornecedorId, madeiraId, tamanhoId } = req.body
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: 'Id inválido' })
+
+        const existe = await prisma.produtos.findUnique({
+            where: { id }
+        })
+
+        if (!existe) return res.status(400).json({ message: 'o produto não existe' })
+
+        const { nome, valor, quantidade, quantidadeMin, acabando, fornecedorId, madeiraId, unidade, tamanhoId, ativo } = req.body
 
         const produto = await prisma.produtos.update({
             where: {
@@ -651,11 +688,13 @@ app.put("/produtos/:id", async (req, res) => {
                 nome,
                 valor,
                 quantidade,
+                unidade,
                 quantidadeMin,
                 acabando,
                 fornecedorId,
                 madeiraId,
-                tamanhoId
+                tamanhoId,
+                ativo
             }
         })
 
@@ -708,7 +747,7 @@ app.get("/madeiras", async (req, res) => {
         let madeira = []
         if (Object.keys(req.query).length > 0) {
 
-            const {nome,nomeFornecedor,ativo} = req.query
+            const { nome, nomeFornecedor, ativo } = req.query
             const where = {}
 
             if (nome) where.nome = { contains: nome, mode: "insensitive" }
@@ -720,9 +759,9 @@ app.get("/madeiras", async (req, res) => {
             }
 
             if (typeof ativo !== "undefined") {
-            // aceita 'true' / 'false' strings
-            where.ativo = ativo === "true";
-        }
+                // aceita 'true' / 'false' strings
+                where.ativo = ativo === "true";
+            }
 
             madeira = await prisma.madeiras.findMany({
                 where,
@@ -990,15 +1029,15 @@ app.post("/tamanhos", async (req, res) => {
     try {
 
         const { nome } = req.body
-        
+
         const repetido = await prisma.tamanhos.findMany({
-            where:{
+            where: {
                 nome,
                 ativo: true
             }
         })
 
-        if(repetido.length > 0) return res.status(404).json({error: "tamanho já existente"});
+        if (repetido.length > 0) return res.status(404).json({ error: "tamanho já existente" });
 
         const tamanhoId = await getNextId('tamanhos')
 
@@ -1019,10 +1058,10 @@ app.post("/tamanhos", async (req, res) => {
 //Get / tamanhos
 app.get("/tamanhos", async (req, res) => {
     try {
-        const {nome,ativo} = req.query
+        const { nome, ativo } = req.query
         const where = {}
 
-        if(nome) where.nome = {contains: nome, mode: "insensitive"}
+        if (nome) where.nome = { contains: nome, mode: "insensitive" }
         if (typeof ativo !== "undefined") {
             // aceita 'true' / 'false' strings
             where.ativo = ativo === "true";
@@ -1030,11 +1069,11 @@ app.get("/tamanhos", async (req, res) => {
 
         let tamanhos = []
 
-        
-            tamanhos = await prisma.tamanhos.findMany({
-                where
-            })
-      
+
+        tamanhos = await prisma.tamanhos.findMany({
+            where
+        })
+
 
         res.status(200).json(tamanhos)
     } catch (error) {
@@ -1046,9 +1085,9 @@ app.get("/tamanhos", async (req, res) => {
 //GET pelo id / tamanhos
 app.get('/tamanhos/:id', async (req, res) => {
     try {
-       const id = parseInt(req.params.id); //converte string em int
+        const id = parseInt(req.params.id); //converte string em int
         if (isNaN(id)) return res.status(404).json({ error: 'ID inválido' });
-        
+
         const tamanho = await prisma.tamanhos.findUnique({
             where: {
                 id
@@ -1106,7 +1145,7 @@ EstoqueMadeiras
 // POST /estoquemadeiras - Criar estoque de madeira
 app.post("/estoquemadeiras", async (req, res) => {
     try {
-        const { madeiraId, tamanhoId, quantidade,quantidadeMin } = req.body;
+        const { madeiraId, tamanhoId, quantidade, quantidadeMin } = req.body;
 
         const estoqueMadeiraId = await getNextId('estoqueMadeiras')
         const estoqueMadeira = await prisma.estoqueMadeiras.create({
@@ -1135,7 +1174,7 @@ app.get("/estoquemadeiras", async (req, res) => {
     try {
         let estoqueMadeiras = [];
 
-        const {madeiraId,tamanhoId,acabando,ativo} = req.query;
+        const { madeiraId, tamanhoId, acabando, ativo } = req.query;
 
         // Verifica se há parâmetros de busca
         if (Object.keys(req.query).length > 0) {
@@ -1145,7 +1184,7 @@ app.get("/estoquemadeiras", async (req, res) => {
             if (tamanhoId) where.tamanhoId = tamanhoId;
             if (acabando) where.acabando = acabando === 'true';
             if (typeof ativo !== "undefined") where.ativo = ativo === "true";
-        
+
 
             // Busca por nome da madeira (nested query)
             if (req.query.nomeMadeira) {
@@ -1193,9 +1232,9 @@ app.get("/estoquemadeiras", async (req, res) => {
 // GET /estoquemadeiras/:id - Buscar estoque específico
 app.get("/estoquemadeiras/:id", async (req, res) => {
     try {
-        const id =parseInt(req.params.id);
+        const id = parseInt(req.params.id);
 
-        if(isNaN(id)) return res.status(404).json({error: "o id está incorreto"})
+        if (isNaN(id)) return res.status(404).json({ error: "o id está incorreto" })
 
 
         const estoqueMadeira = await prisma.estoqueMadeiras.findUnique({
@@ -1220,17 +1259,17 @@ app.get("/estoquemadeiras/:id", async (req, res) => {
 //PUT /estoqueMadeiras - Atualizar o estoque existente
 app.put("/estoquemadeiras/:id", async (req, res) => {
     try {
-         const id =parseInt(req.params.id);
+        const id = parseInt(req.params.id);
 
-        if(isNaN(id)) return res.status(404).json({error: "o id está incorreto"})
+        if (isNaN(id)) return res.status(404).json({ error: "o id está incorreto" })
 
         const existente = await prisma.estoqueMadeiras.findUnique({
-            where:{id}
+            where: { id }
         })
 
-        if(!existente) return res.status(400).json({error: "estoque não existente"})
+        if (!existente) return res.status(400).json({ error: "estoque não existente" })
 
-        const { madeiraId, tamanhoId, quantidade,quantidadeMin, acabando, ativo } = req.body;
+        const { madeiraId, tamanhoId, quantidade, quantidadeMin, acabando, ativo } = req.body;
 
         const estoqueMadeira = await prisma.estoqueMadeiras.update({
             where: {
@@ -1242,7 +1281,7 @@ app.put("/estoquemadeiras/:id", async (req, res) => {
                 quantidade,
                 acabando: typeof acabando === "boolean" ? acabando : undefined,
                 quantidadeMin,
-                ativo:typeof ativo === "boolean" ? ativo : undefined
+                ativo: typeof ativo === "boolean" ? ativo : undefined
             },
             include: {
                 madeira: true,
@@ -1260,15 +1299,15 @@ app.put("/estoquemadeiras/:id", async (req, res) => {
 //DELETE /estoqueMadeiras - deletetar o estoque existente
 app.delete('/estoquemadeiras/:id', async (req, res) => {
     try {
-        const id =parseInt(req.params.id);
+        const id = parseInt(req.params.id);
 
-        if(isNaN(id)) return res.status(404).json({error: "o id está incorreto"})
+        if (isNaN(id)) return res.status(404).json({ error: "o id está incorreto" })
 
         const existente = await prisma.estoqueMadeiras.findMany({
-            where:{id}
+            where: { id }
         })
 
-        if(!existente) return res.status(400).json({error: "estoque não existente"})
+        if (!existente) return res.status(400).json({ error: "estoque não existente" })
 
         await prisma.estoqueMadeiras.delete({
             where: {
