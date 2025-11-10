@@ -266,8 +266,38 @@ app.post('/fornecedores', async (req, res) => {
             email
         } = req.body;
 
+        const repete = await prisma.fornecedores.findFirst({
+            where: {
+                nome,
+                ativo: true
+            }
+        })
+
+        if (repete) return res.status(400).json({ message: 'fornecedor já existe' });
+
+        const fornecedorId = await getNextId('fornecedores')
+
+        // gera IDs para produtos (se existirem)
+        const produtosComId = produtos
+            ? await Promise.all(produtos.map(async (p) => ({
+                ...p,
+                id: await getNextId('produtos')
+            })))
+            : [];
+
+        // gera IDs para madeiras (se existirem)
+        const madeirasComId = madeiras
+            ? await Promise.all(madeiras.map(async (m) => ({
+                ...m,
+                id: await getNextId('madeiras')
+            })))
+            : [];
+
+            
+
         const fornecedor = await prisma.fornecedores.create({
             data: {
+                id: fornecedorId,
                 nome,
                 cep,
                 cidade,
@@ -281,13 +311,13 @@ app.post('/fornecedores', async (req, res) => {
                 // Produtos são opcionais
                 ...(produtos && {
                     produtos: {
-                        create: produtos
+                        create: produtosComId
                     }
                 }),
                 // Madeiras são opcionais
                 ...(madeiras && {
                     madeiras: {
-                        create: madeiras
+                        create: madeirasComId
                     }
                 })
             },
@@ -309,31 +339,22 @@ app.get("/fornecedores", async (req, res) => {
     try {
         let fornecedores = []
 
-        if (Object.keys(req.query).length > 0) {
-            const where = {}
+        const where = {}
 
-            if (req.query.nome) where.nome = { contains: req.query.nome, mode: "insensitive" }
-            if (req.query.cep) where.cep = req.query.cep
-            if (req.query.estado) where.estado = req.query.estado
-            if (req.query.cidade) where.cidade = req.query.cidade
-            if (req.query.descricao) where.descricao = req.query.descricao
+        if (req.query.nome) where.nome = { contains: req.query.nome, mode: "insensitive" }
+        if (req.query.cep) where.cep = req.query.cep
+        if (req.query.estado) where.estado = { contains: req.query.estado, mode: 'insensitive' }
+        if (req.query.cidade) where.cidade = { contains: req.query.cidade, mode: 'insensitive' }
+        if (req.query.descricao) where.descricao = { contains: req.query.descricao, mode: 'insensitive' }
+        if (req.query.ativo) where.ativo = req.query.ativo === "true"
 
-            fornecedores = await prisma.fornecedores.findMany({
-                where,
-                include: {
-                    madeiras: true,
-                    produtos: true
-                }
-            })
-
-        } else {
-            fornecedores = await prisma.fornecedores.findMany({
-                include: {
-                    madeiras: true,
-                    produtos: true
-                }
-            })
-        }
+        fornecedores = await prisma.fornecedores.findMany({
+            where,
+            include: {
+                madeiras: true,
+                produtos: true
+            }
+        })
 
         res.status(200).json(fornecedores)
 
@@ -346,7 +367,8 @@ app.get("/fornecedores", async (req, res) => {
 //GET by id /fornecedores
 app.get('/fornecedores/:id', async (req, res) => {
     try {
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(400).json({ error: 'Id inválido' })
 
         const fornecedor = await prisma.fornecedores.findUnique({
             where: {
@@ -368,7 +390,16 @@ app.get('/fornecedores/:id', async (req, res) => {
 app.delete("/fornecedores/:id", async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(400).json({ error: 'Id inválido' })
+
+        const fornecedor = await prisma.fornecedores.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!fornecedor) return res.status(400).json({ erro: "fornecedor não encontrado" })
 
         await prisma.fornecedores.delete({
             where: {
@@ -388,7 +419,16 @@ app.delete("/fornecedores/:id", async (req, res) => {
 app.put("/fornecedores/:id", async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(400).json({ error: 'Id inválido' })
+
+        const existe = await prisma.fornecedores.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!existe) return res.status(400).json({ erro: "fornecedor não encontrado" })
 
         const {
             nome,
@@ -440,16 +480,35 @@ app.put("/fornecedores/:id", async (req, res) => {
 //POST / adicionar mais produtos ao fornecedor existente
 app.post("/fornecedores/:id/produtos", async (req, res) => {
     try {
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(400).json({ error: 'Id inválido' })
+
+        const existe = await prisma.fornecedores.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!existe) return res.status(400).json({ erro: "fornecedor não encontrado" })
+
         const { produtos } = req.body
+
+        // gera IDs para produtos (se existirem)
+        const produtosComId = produtos
+            ? await Promise.all(produtos.map(async (p) => ({
+                ...p,
+                id: await getNextId('produtos')
+            })))
+            : [];
+
 
         const fornecedor = await prisma.fornecedores.update({
             where: {
-                id: id
+                id
             },
             data: {
                 produtos: {
-                    create: produtos
+                    create: produtosComId
                 }
             },
             include: {
@@ -470,8 +529,25 @@ app.post("/fornecedores/:id/produtos", async (req, res) => {
 app.post("/fornecedores/:id/madeiras", async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(400).json({ error: 'Id inválido' })
+
+        const existe = await prisma.fornecedores.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!existe) return res.status(400).json({ erro: "fornecedor não encontrado" })
         const { madeiras } = req.body
+
+        // gera IDs para madeiras (se existirem)
+        const madeirasComId = madeiras
+            ? await Promise.all(madeiras.map(async (m) => ({
+                ...m,
+                id: await getNextId('madeiras')
+            })))
+            : [];
 
         const fornecedor = await prisma.fornecedores.update({
             where: {
@@ -479,7 +555,7 @@ app.post("/fornecedores/:id/madeiras", async (req, res) => {
             },
             data: {
                 madeiras: {
-                    create: madeiras
+                    create: madeirasComId
                 }
             },
             include: {
@@ -544,7 +620,7 @@ app.post("/produtos", async (req, res) => {
             })
             return produto
         })
-        
+
         res.status(201).json(produtoSalvo)
 
 
@@ -568,7 +644,7 @@ app.get("/produtos", async (req, res) => {
             if (quantidade) where.quantidade = quantidade
             if (acabando) where.acabando = acabando === 'true';
             if (ativo) where.ativo = ativo === 'true';
-            if (unidade) where.unidade = {contains: unidade, mode: "insensitive"}
+            if (unidade) where.unidade = { contains: unidade, mode: "insensitive" }
 
 
 
