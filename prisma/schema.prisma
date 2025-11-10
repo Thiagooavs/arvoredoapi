@@ -21,7 +21,7 @@ model Counter {
 }
 
 model Usuarios {
-  id    Int    @id  @map("_id") 
+  id    Int    @id  @map("_id")     //@id @default(auto()) @map("_id") @db.ObjectId
   login String @unique
   senha String
   nome  String
@@ -132,7 +132,7 @@ model Tamanhos {
 }
 
 model EstoqueMadeiras {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  id             Int      @id  @map("_id") 
   madeiraId      Int      @map("madeira") 
   tamanhoId      Int      @map("tamanho") 
   quantidade     Int      @default(0)
@@ -209,10 +209,10 @@ model Orcamento {
 }
 
 model OrcamentoE{
-  id                  Int     @id  @map("_id") 
+  id                  Int      @id  @map("_id") 
   orcamentoId         Int      @map("orcamento")
-  estoqueMadeiraId    String?  @map("estoqueMadeira")  @db.ObjectId
-  produtoId           Int?  @map("produto") 
+  estoqueMadeiraId    Int?     @map("estoqueMadeira") 
+  produtoId           Int?     @map("produto") 
   pecaId              String?  @map("peca") @db.ObjectId
   quantidade          Int?
   valorVenda          Float?
@@ -256,7 +256,7 @@ model Vendas {
 model VendasE{
   id                Int       @id  @map("_id")
   vendaId           Int       @map("venda") 
-  estoqueMadeiraId  String?   @map("estoqueMadeira") @db.ObjectId
+  estoqueMadeiraId  Int?      @map("estoqueMadeira")
   produtoId         Int?      @map("produto") 
   pecaId            String?   @map("peca") @db.ObjectId
   quantidade        Int

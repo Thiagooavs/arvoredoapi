@@ -1108,7 +1108,7 @@ app.post("/estoquemadeiras", async (req, res) => {
     try {
         const { madeiraId, tamanhoId, quantidade,quantidadeMin } = req.body;
 
-        const estoqueMadeiraId = getNextId('estoqueMadeiras')
+        const estoqueMadeiraId = await getNextId('estoqueMadeiras')
         const estoqueMadeira = await prisma.estoqueMadeiras.create({
             data: {
                 id: estoqueMadeiraId,
@@ -1135,13 +1135,17 @@ app.get("/estoquemadeiras", async (req, res) => {
     try {
         let estoqueMadeiras = [];
 
+        const {madeiraId,tamanhoId,acabando,ativo} = req.query;
+
         // Verifica se há parâmetros de busca
         if (Object.keys(req.query).length > 0) {
             const where = {};
 
-            if (req.query.madeiraId) where.madeiraId = req.query.madeiraId;
-            if (req.query.tamanhoId) where.tamanhoId = req.query.tamanhoId;
-            if (req.query.acabando) where.acabando = req.query.acabando === 'true';
+            if (madeiraId) where.madeiraId = madeiraId;
+            if (tamanhoId) where.tamanhoId = tamanhoId;
+            if (acabando) where.acabando = acabando === 'true';
+            if (typeof ativo !== "undefined") where.ativo = ativo === "true";
+        
 
             // Busca por nome da madeira (nested query)
             if (req.query.nomeMadeira) {
@@ -1189,7 +1193,10 @@ app.get("/estoquemadeiras", async (req, res) => {
 // GET /estoquemadeiras/:id - Buscar estoque específico
 app.get("/estoquemadeiras/:id", async (req, res) => {
     try {
-        const { id } = req.params;
+        const id =parseInt(req.params.id);
+
+        if(isNaN(id)) return res.status(404).json({error: "o id está incorreto"})
+
 
         const estoqueMadeira = await prisma.estoqueMadeiras.findUnique({
             where: { id },
@@ -1213,8 +1220,17 @@ app.get("/estoquemadeiras/:id", async (req, res) => {
 //PUT /estoqueMadeiras - Atualizar o estoque existente
 app.put("/estoquemadeiras/:id", async (req, res) => {
     try {
-        const { id } = req.params
-        const { madeiraId, tamanhoId, quantidade, acabando } = req.body;
+         const id =parseInt(req.params.id);
+
+        if(isNaN(id)) return res.status(404).json({error: "o id está incorreto"})
+
+        const existente = await prisma.estoqueMadeiras.findUnique({
+            where:{id}
+        })
+
+        if(!existente) return res.status(400).json({error: "estoque não existente"})
+
+        const { madeiraId, tamanhoId, quantidade,quantidadeMin, acabando, ativo } = req.body;
 
         const estoqueMadeira = await prisma.estoqueMadeiras.update({
             where: {
@@ -1224,7 +1240,9 @@ app.put("/estoquemadeiras/:id", async (req, res) => {
                 madeiraId,
                 tamanhoId,
                 quantidade,
-                acabando
+                acabando: typeof acabando === "boolean" ? acabando : undefined,
+                quantidadeMin,
+                ativo:typeof ativo === "boolean" ? ativo : undefined
             },
             include: {
                 madeira: true,
@@ -1242,7 +1260,15 @@ app.put("/estoquemadeiras/:id", async (req, res) => {
 //DELETE /estoqueMadeiras - deletetar o estoque existente
 app.delete('/estoquemadeiras/:id', async (req, res) => {
     try {
-        const { id } = req.params
+        const id =parseInt(req.params.id);
+
+        if(isNaN(id)) return res.status(404).json({error: "o id está incorreto"})
+
+        const existente = await prisma.estoqueMadeiras.findMany({
+            where:{id}
+        })
+
+        if(!existente) return res.status(400).json({error: "estoque não existente"})
 
         await prisma.estoqueMadeiras.delete({
             where: {
