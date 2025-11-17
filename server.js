@@ -1631,6 +1631,8 @@ app.post("/orcamentos", async (req, res) => {
             rua,
             numero } = req.body;
 
+            const orcamentoId = await getNextId('orcamentos')
+
         const orcamentoEComTotal = (orcamentoE || []).map(item => ({
             ...item,
             valorTotal: item.valorTotal ?? (item.quantidade || 0) * (item.valorVenda || 0),
@@ -1644,6 +1646,7 @@ app.post("/orcamentos", async (req, res) => {
         const orcamentoSalvo = await prisma.$transaction(async (tx) => {
             return await tx.orcamento.create({
                 data: {
+                    id: orcamentoId,
                     descricao,
                     usuarioId,
                     clienteId,
