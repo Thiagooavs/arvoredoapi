@@ -961,8 +961,11 @@ app.post('/clientes', async (req, res) => {
 
         const { nome, email, cpf, telefone, cep, cidade, estado, bairro, rua, numero } = req.body
 
+        const clienteId = await getNextId("clientes")
+
         const Clientes = await prisma.clientes.create({
             data: {
+                id: clienteId,
                 nome,
                 email,
                 cpf,
@@ -1017,7 +1020,8 @@ app.get("/clientes", async (req, res) => {
 app.get('/clientes/:id', async (req, res) => {
     try {
 
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
 
         const cliente = await prisma.clientes.findUnique({
             where: {
@@ -1037,7 +1041,17 @@ app.get('/clientes/:id', async (req, res) => {
 //PUT / clientes
 app.put("/clientes/:id", async (req, res) => {
     try {
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
+
+        const cliente = await prisma.clientes.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!cliente) return res.status(400).json({ error: "cliente não encontrado" })
+
         const { nome, email, cpf, telefone, cep, cidade, estado, bairro, rua, numero } = req.body
 
         const item = await prisma.clientes.findUnique({ where: { id } })
@@ -1072,7 +1086,16 @@ app.put("/clientes/:id", async (req, res) => {
 //DELETE / clientes
 app.delete("/clientes/:id", async (req, res) => {
     try {
-        const { id } = req.params
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
+
+        const cliente = await prisma.clientes.findUnique({
+            where: {
+                id
+            }
+        })
+
+        if (!cliente) return res.status(400).json({ error: "cliente não encontrado" })
 
         await prisma.clientes.delete({
             where: {

@@ -164,17 +164,17 @@ model EstoqueProdutos {
 }
 
 model Clientes {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  nome   String
-  email  String @unique
-  cpf    String @unique 
-  telefone    String
-  cep         String   
+  id          Int      @id  @map("_id") 
+  nome        String
+  email       String?  @unique
+  cpf         String   @unique 
+  telefone    String?
+  cep         String?  
   cidade      String?
   estado      String?
   bairro      String?
   rua         String?
-  numero      Int?
+  numero      String?
 
   orcamento   Orcamento[]
   venda       Vendas[]
@@ -188,7 +188,7 @@ model Orcamento {
   id              Int    @id  @map("_id") 
   descricao       String?
   usuarioId       Int  @map("usuario") 
-  clienteId       String?  @map("cliente") @db.ObjectId
+  clienteId       Int?  @map("cliente") 
   nome            String?
   cpf             String?
   cep             String?
@@ -232,7 +232,7 @@ model Vendas {
   id                Int    @id  @map("_id")
   descricao         String?
   usuarioId         Int      @map("usuario") 
-  clienteId         String?  @map("cliente") @db.ObjectId
+  clienteId         Int?  @map("cliente") 
   nome              String?
   cpf               String?
   cep               String?
