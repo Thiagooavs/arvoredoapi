@@ -1790,7 +1790,16 @@ app.post("/orcamentos/:id/orcamentosE", async (req, res) => {
 // DELETE /orcamentos/:id
 app.delete("/orcamentos/:id", async (req, res) => {
     try {
-        const { id } = req.params;
+       const id = parseInt(req.params.id)
+    if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
+
+    const orcamento = await prisma.orcamento.findUnique({
+        where: {
+            id
+        }
+    })
+
+    if (!orcamento) return res.status(400).json({ error: "rçamento não encontrado" })
 
         await prisma.$transaction(async (tx) => {
             await tx.orcamentoE.deleteMany({ where: { orcamentoId: id } });

@@ -196,7 +196,7 @@ model Orcamento {
   estado          String?
   bairro          String?
   rua             String?
-  numero          Int?
+  numero          String?
   telefone        String?
   dataCriacao     DateTime @default(now())
   valorTotal      Float
