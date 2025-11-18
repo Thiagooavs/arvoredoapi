@@ -1708,7 +1708,9 @@ app.get("/orcamentos", async (req, res) => {
 // GET /orcamentos/:id
 app.get("/orcamentos/:id", async (req, res) => {
     try {
-        const { id } = req.params;
+        const id  = parseInt(req.params.id);
+
+        if(isNaN(id)) return res.status(400).json({error: "Id inválido"})
 
         const orcamento = await prisma.orcamento.findUnique({
             where: { id },
@@ -1729,8 +1731,17 @@ app.get("/orcamentos/:id", async (req, res) => {
 // PUT /orcamentos/:id
 app.put("/orcamentos/:id", async (req, res) => {
     try {
-        const { id } = req.params;
-        const { descricao, clienteId, valorTotal, nome, cpf, cep, cidade, estado, rua, numero, telefone } = req.body;
+        const id  = parseInt(req.params.id);
+
+        if(isNaN(id)) return res.status(400).json({error: "Id inválido"})
+
+        const orcamento = await prisma.orcamento.findUnique({
+            where: { id },
+        });
+
+        if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
+
+        const { descricao, clienteId, valorTotal,bairro, nome, cpf, cep, cidade, estado, rua, numero, telefone } = req.body;
 
         const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
             return await tx.orcamento.update({
@@ -1744,6 +1755,7 @@ app.put("/orcamentos/:id", async (req, res) => {
                     cep,
                     cidade,
                     estado,
+                    bairro,
                     rua,
                     numero,
                     telefone
@@ -1762,13 +1774,34 @@ app.put("/orcamentos/:id", async (req, res) => {
 // POST /orcamentos/:id/orcamentosE
 app.post("/orcamentos/:id/orcamentosE", async (req, res) => {
     try {
-        const { id } = req.params;
+        const id  = parseInt(req.params.id);
+
+        if(isNaN(id)) return res.status(400).json({error: "Id inválido"})
+
+        const orcamento = await prisma.orcamento.findUnique({
+            where: { id },
+        });
+
+        if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
+
         const { orcamentoE } = req.body;
 
+
+
         const resultado = await prisma.$transaction(async (tx) => {
+
+            const orcamentoEComTotal = await Promise.all(
+            (orcamentoE || []).map(async (item) => ({
+                id: await getNextId('orcamentoE'), // ← ADICIONE ESTA LINHA
+                ...item,
+                valorTotal: item.valorTotal ?? (item.quantidade || 0) * (item.valorVenda || 0),
+            }))
+        );
             const novoItem = await tx.orcamento.update({
                 where: { id },
-                data: { orcamentoE: { create: orcamentoE } },
+                data: { orcamentoE: { create: orcamentoEComTotal
+                    
+                 } },
                 include: includeOrcamento
             });
 
