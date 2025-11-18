@@ -11,7 +11,36 @@ app.use(express.json()) //para usar a linguagem json
 
 const prisma = new PrismaClient()
 
+/* 
+#https://www.youtube.com/watch?v=PyrMT0GA3sE
+#*/
 
+//Banco de dados no MongoDB
+/*
+#Banco: Arvoredo
+#Usuario: Thiago
+#Password: etecjau
+
+#npm install mongodb
+
+#mongodb+srv://thiago:etecjau@arvoredo.dkrq4wj.mongodb.net/?retryWrites=true&w=majority&appName=Arvoredo
+
+#*/
+
+//Banco de dados no MongoDB da conta daigo
+/*
+#Banco: Arvoredo
+#Usuario: daigo
+#Password: etecjau
+
+#npm install mongodb
+
+#mongodb+srv://thiago:etecjau@arvoredo.dkrq4wj.mongodb.net/?retryWrites=true&w=majority&appName=Arvoredo
+
+#*/
+
+// node Server.js  é usado para rodar o arquivo 
+// node --watch server.js é o mesmo que o anterior mas ele consegue se atualizar sozinho
 
 /* ===========================================================
    🔒 Middleware de Autenticação por Chave (x-api-key)
@@ -46,38 +75,6 @@ function autenticar(req, res, next) {
 // Todas as rotas exigem autenticação
 app.use(autenticar);
 
-
-
-/* 
-https://www.youtube.com/watch?v=PyrMT0GA3sE
-*/
-
-//Banco de dados no MongoDB
-/*
-Banco: Arvoredo
-Usuario: Thiago
-Password: etecjau
-
-npm install mongodb
-
-mongodb+srv://thiago:etecjau@arvoredo.dkrq4wj.mongodb.net/?retryWrites=true&w=majority&appName=Arvoredo
-
-*/
-
-//Banco de dados no MongoDB da conta daigo
-/*
-Banco: Arvoredo
-Usuario: daigo
-Password: etecjau
-
-npm install mongodb
-
-mongodb+srv://thiago:etecjau@arvoredo.dkrq4wj.mongodb.net/?retryWrites=true&w=majority&appName=Arvoredo
-
-*/
-
-// node Server.js  é usado para rodar o arquivo 
-// node --watch server.js é o mesmo que o anterior mas ele consegue se atualizar sozinho
 
 // 🔹 Rotas de exemplo
 app.get("/", (req, res) => {
@@ -1631,19 +1628,22 @@ app.post("/orcamentos", async (req, res) => {
             rua,
             numero } = req.body;
 
-            const orcamentoId = await getNextId('orcamentos')
-
-        const orcamentoEComTotal = (orcamentoE || []).map(item => ({
-            ...item,
-            valorTotal: item.valorTotal ?? (item.quantidade || 0) * (item.valorVenda || 0),
-        }));
-
-        const valorTotalCalculado = orcamentoEComTotal.reduce(
-            (acc, item) => acc + item.valorTotal,
-            0
+            
+           const orcamentoEComTotal = await Promise.all(
+            (orcamentoE || []).map(async (item) => ({
+                id: await getNextId('orcamentoE'), // ← ADICIONE ESTA LINHA
+                ...item,
+                valorTotal: item.valorTotal ?? (item.quantidade || 0) * (item.valorVenda || 0),
+            }))
         );
-
-        const orcamentoSalvo = await prisma.$transaction(async (tx) => {
+            
+            const valorTotalCalculado = orcamentoEComTotal.reduce(
+                (acc, item) => acc + item.valorTotal,
+                0
+            );
+            
+            const orcamentoSalvo = await prisma.$transaction(async (tx) => {
+            const orcamentoId = await getNextId('orcamentos')
             return await tx.orcamento.create({
                 data: {
                     id: orcamentoId,
