@@ -1622,6 +1622,7 @@ app.post("/orcamentos", async (req, res) => {
             nome,
             cep,
             cpf,
+            forma,
             estado,
             cidade,
             bairro,
@@ -1652,6 +1653,7 @@ app.post("/orcamentos", async (req, res) => {
                     clienteId,
                     nome,
                     cep,
+                    forma,
                     cpf,
                     estado,
                     cidade,
@@ -1741,7 +1743,7 @@ app.put("/orcamentos/:id", async (req, res) => {
 
         if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
 
-        const { descricao, clienteId, valorTotal, bairro, nome, cpf, cep, cidade, estado, rua, numero, telefone } = req.body;
+        const { descricao, clienteId, valorTotal, forma, bairro, nome, cpf, cep, cidade, estado, rua, numero, telefone } = req.body;
 
         const orcamentoAtualizado = await prisma.$transaction(async (tx) => {
             return await tx.orcamento.update({
@@ -1752,6 +1754,7 @@ app.put("/orcamentos/:id", async (req, res) => {
                     valorTotal,
                     nome,
                     cpf,
+                    forma,
                     cep,
                     cidade,
                     estado,
@@ -1855,13 +1858,13 @@ app.put("/orcamentosE/:id", async (req, res) => {
         const id = parseInt(req.params.id)
         if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
 
-        const orcamento = await prisma.orcamento.findUnique({
+        const orcamentoE = await prisma.orcamentoE.findUnique({
             where: {
                 id
             }
         })
 
-        if (!orcamento) return res.status(400).json({ error: "Orçamento não encontrado" })
+        if (!orcamentoE) return res.status(400).json({ error: "Item de orçamento não encontrado" })
         const { estoqueMadeiraId, produtoId, pecaId, quantidade, valorVenda, valorTotal } = req.body;
 
         const itemAtualizado = await prisma.$transaction(async (tx) => {
@@ -1922,7 +1925,7 @@ app.delete("/orcamentosE/:id", async (req, res) => {
 // Cria uma venda a partir do body. body pode conter vendaE: [ { produtoId|pecaId|estoqueMadeiraId, quantidade, valorVenda, valorTotal } ]
 app.post("/vendas", async (req, res) => {
     try {
-        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, vendaE, nome, cpf, cep, estado, cidade, bairro, rua, numero, telefone } = req.body;
+        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, forma, vendaE, nome, cpf, cep, estado, cidade, bairro, rua, numero, telefone } = req.body;
 
         // 🔹 Calcula valorTotal de cada item
         const vendaEComTotal = (vendaE || []).map(item => ({
@@ -1989,6 +1992,7 @@ app.post("/vendas", async (req, res) => {
                     cep,
                     estado,
                     cidade,
+                    forma,
                     bairro,
                     rua,
                     numero,
@@ -2049,7 +2053,9 @@ app.post("/vendas", async (req, res) => {
 // Converte um orçamento existente em venda (cria venda com os itens do orçamento)
 app.post("/vendas/from-orcamento/:id", async (req, res) => {
     try {
-        const { id } = req.params; // id do orçamento
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })  // id do orçamento
+
         const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, nome, cpf, cep, estado, cidade, bairro, rua, numero, telefone } = req.body;
 
         const orcamento = await prisma.orcamento.findUnique({
@@ -2098,15 +2104,26 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
                 }
             }
 
+            const vendaId = await getNextId("vendas")
+
+            const vendaEComId = await Promise.all(
+                (vendaEFromOrcamento || []).map(async (item) => ({
+                    id: await getNextId('vendasE'), // ← ADICIONE ESTA LINHA
+                    ...item,
+                }))
+            );
+
             // 🔸 Cria a venda
             const novaVenda = await tx.vendas.create({
                 data: {
+                    id: vendaId,
                     descricao: descricao || orcamento.descricao || `Venda a partir do orçamento ${id}`,
                     usuarioId: usuarioId || orcamento.usuarioId,
                     clienteId: clienteId || orcamento.clienteId,
                     nome: nome || orcamento.nome,
                     cpf: cpf || orcamento.cpf,
                     cep: cep || orcamento.cep,
+                    forma: forma || orcamento.forma,
                     estado: estado || orcamento.estado,
                     cidade: cidade || orcamento.cidade,
                     bairro: bairro || orcamento.bairro,
@@ -2116,7 +2133,7 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
                     valorTotal: valorTotalCalculado,
                     dataPagamento: dataPagamentoFormatada,
                     pago: !!pago,
-                    vendaE: { create: vendaEFromOrcamento }
+                    vendaE: { create: vendaEComId }
                 },
                 include: {
                     usuario: true,
@@ -2247,7 +2264,8 @@ app.get("/vendas", async (req, res) => {
 // GET /vendas/:id (detalhado)
 app.get("/vendas/:id", async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
 
         const venda = await prisma.vendas.findUnique({
             where: { id },
@@ -2280,8 +2298,16 @@ app.get("/vendas/:id", async (req, res) => {
 // PUT /vendas/:id (atualiza metadados da venda)
 app.put("/vendas/:id", async (req, res) => {
     try {
-        const { id } = req.params;
-        const { descricao, clienteId, usuarioId, dataPagamento, pago, nome, cpf, cep, estado, cidade, rua, numero, telefone } = req.body;
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
+
+        const existe = await prisma.vendas.findUnique({
+            where: { id }
+        })
+
+        if (!existe) return res.status(400).json({ error: "Venda não existe" })
+
+        const { descricao, clienteId, usuarioId, dataPagamento, pago, nome, cpf, forma, cep, estado, cidade, rua, numero, telefone } = req.body;
 
         // 🔹 formata  a data corretamente
         const dataPagamentoFormatada = dataPagamento
@@ -2296,6 +2322,7 @@ app.put("/vendas/:id", async (req, res) => {
                 clienteId,
                 usuarioId,
                 nome,
+                forma,
                 cpf,
                 cep,
                 estado,
@@ -2331,10 +2358,17 @@ app.put("/vendas/:id", async (req, res) => {
 // DELETE /vendas/:id
 app.delete("/vendas/:id", async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
 
-        await prisma.vendas.delete({ where: { id } });
+        const existe = await prisma.vendas.findUnique({
+            where: { id }
+        })
+
+        if (!existe) return res.status(400).json({ error: "Venda não existe" })
+
         await prisma.vendasE.deleteMany({ where: { vendaId: id } });
+        await prisma.vendas.delete({ where: { id } });
 
         // se quiser reverter o estoque aqui, essa é a hora de fazê-lo (buscar vendaE e incrementar de volta)
         res.status(204).send();
@@ -2351,32 +2385,104 @@ app.delete("/vendas/:id", async (req, res) => {
 // POST /vendas/:id/vendaE  -> adicionar item a uma venda existente
 app.post("/vendas/:id/vendaE", async (req, res) => {
     try {
-        const { id } = req.params; // venda id
-        const { produtoId, pecaId, estoqueMadeiraId, quantidade, valorVenda, valorTotal } = req.body;
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
 
-        const novoItem = await prisma.vendasE.create({
-            data: {
-                vendaId: id,
-                produtoId: produtoId || null,
-                pecaId: pecaId || null,
-                estoqueMadeiraId: estoqueMadeiraId || null,
-                quantidade,
-                valorVenda,
-                valorTotal
-            },
-            include: {
-                produto: true,
-                peca: true,
-                estoqueMadeira: { include: { madeira: true, tamanho: true } }
+        const existe = await prisma.vendas.findUnique({
+            where: { id }
+        })
+
+        if (!existe) return res.status(400).json({ error: "Venda não existe" })
+
+        const { vendaE } = req.body
+
+        const resultado = await prisma.$transaction(async (tx) => {
+
+            // 🔸 Valida estoque antes
+            for (const item of vendaE) {
+                if (item.estoqueMadeiraId) {
+                    const estoque = await tx.estoqueMadeiras.findUnique({
+                        where: { id: item.estoqueMadeiraId },
+                    });
+                    if (!estoque || estoque.quantidade < item.quantidade) {
+                        throw new Error(
+                            `Estoque insuficiente para a madeira (ID: ${item.estoqueMadeiraId}).`
+                        );
+                    }
+                }
+
+                if (item.produtoId) {
+                    const produto = await tx.produtos.findUnique({
+                        where: { id: item.produtoId },
+                    });
+                    if (!produto || produto.quantidade < item.quantidade) {
+                        throw new Error(
+                            `Estoque insuficiente para o produto (ID: ${item.produtoId}).`
+                        );
+                    }
+                }
             }
+
+            const vendaEComTotal = await Promise.all(
+                (vendaE || []).map(async (item) => ({
+                    id: await getNextId('vendasE'), // ← ADICIONE ESTA LINHA
+                    ...item,
+                    valorTotal: item.valorTotal ?? (item.quantidade || 0) * (item.valorVenda || 0),
+                }))
+            );
+
+            const novoItem = await tx.vendas.update({
+                where: { id },
+                data: {
+                    vendaE: {
+                        create: vendaEComTotal
+                    }
+                },
+                include: {
+                    usuario: true,
+                    cliente: true,
+                    vendaE: {
+                        include: {
+                            produto: {
+                                include: { fornecedor: true }
+                            },
+                            peca: true,
+                            estoqueMadeira: {
+                                include: {
+                                    madeira: { include: { fornecedor: true } },
+                                    tamanho: true
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Recalcula total
+            const itens = await tx.vendasE.findMany({ where: { vendaId: id } });
+            const valorTotalAtualizado = itens.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
+            await tx.vendas.update({ where: { id }, data: { valorTotal: valorTotalAtualizado } });
+
+            // 🔸 Decrementa do estoque
+            for (const item of vendaEComTotal) {
+                if (item.produtoId) {
+                    await tx.produtos.update({
+                        where: { id: item.produtoId },
+                        data: { quantidade: { decrement: item.quantidade } },
+                    });
+                }
+                if (item.estoqueMadeiraId) {
+                    await tx.estoqueMadeiras.update({
+                        where: { id: item.estoqueMadeiraId },
+                        data: { quantidade: { decrement: item.quantidade } },
+                    });
+                }
+            }
+
+            return novoItem;
         });
 
-        // opcional: recalcular valorTotal da venda
-        const itens = await prisma.vendasE.findMany({ where: { vendaId: id } });
-        const valorTotalAtualizado = itens.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
-        await prisma.vendas.update({ where: { id }, data: { valorTotal: valorTotalAtualizado } });
-
-        res.status(201).json(novoItem);
+        res.status(201).json(resultado);
     } catch (error) {
         console.error("Erro POST /vendas/:id/vendaE:", error.message);
         res.status(400).json({ message: error.message });
@@ -2386,7 +2492,15 @@ app.post("/vendas/:id/vendaE", async (req, res) => {
 // PUT /vendaE/:id  -> atualizar item de venda
 app.put("/vendaE/:id", async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
+
+        const existe = await prisma.vendasE.findUnique({
+            where: { id }
+        })
+
+        if (!existe) return res.status(400).json({ error: "Item da venda não existe" })
+
         const { produtoId, pecaId, estoqueMadeiraId, quantidade, valorVenda, valorTotal } = req.body;
 
         const atual = await prisma.vendasE.update({
@@ -2416,7 +2530,8 @@ app.put("/vendaE/:id", async (req, res) => {
 // DELETE /vendaE/:id
 app.delete("/vendaE/:id", async (req, res) => {
     try {
-        const { id } = req.params;
+        const id = parseInt(req.params.id)
+        if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })
 
         // buscar item para saber id da venda pai antes de deletar
         const item = await prisma.vendasE.findUnique({ where: { id } });

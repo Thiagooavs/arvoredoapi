@@ -198,6 +198,7 @@ model Orcamento {
   rua             String?
   numero          String?
   telefone        String?
+  forma           String?
   dataCriacao     DateTime @default(now())
   valorTotal      Float
   
@@ -239,12 +240,13 @@ model Vendas {
   estado            String?
   bairro            String?
   rua               String?
-  numero            Int?
+  numero            String?
   telefone          String?
   valorTotal        Float
   dataCriacao       DateTime  @default(now())
   dataPagamento     DateTime?
   pago              Boolean   @default(false)
+  forma             String?
 
   cliente           Clientes? @relation(fields: [clienteId], references: [id])
   usuario           Usuarios? @relation(fields: [usuarioId], references: [id])
