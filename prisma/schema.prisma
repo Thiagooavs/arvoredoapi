@@ -198,7 +198,6 @@ model Orcamento {
   rua             String?
   numero          String?
   telefone        String?
-  forma           String?
   dataCriacao     DateTime @default(now())
   valorTotal      Float
   
