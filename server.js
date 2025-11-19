@@ -2079,8 +2079,6 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
         const id = parseInt(req.params.id)
         if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })  // id do orçamento
 
-        const { descricao, usuarioId, clienteId, dataPagamento, pago, valorTotal, nome, cpf, cep, estado, cidade, bairro, rua, numero, telefone } = req.body;
-
         const orcamento = await prisma.orcamento.findUnique({
             where: { id },
             include: { orcamentoE: true }
@@ -2097,12 +2095,16 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
             valorTotal: item.valorTotal || 0
         }));
 
-        const valorTotalCalculado = valorTotal ?? vendaEFromOrcamento.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
+        // ✅ ADICIONE ESTA LINHA - Calcula o valor total
+        const valorTotalCalculado = vendaEFromOrcamento.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
 
-        // Formata a data de pagamento
-        const dataPagamentoFormatada = dataPagamento
-            ? new Date(dataPagamento.includes("T") ? dataPagamento : `${dataPagamento}T00:00:00`)
-            : null;
+        let dataPagamentoFormatada;
+        
+       
+            // ✅ Se não foi enviada, define para 1 mês depois da data de criação
+            dataPagamentoFormatada = new Date();
+            dataPagamentoFormatada.setMonth(dataPagamentoFormatada.getMonth() + 1);
+    
 
         // Transação atômica
         const vendaSalva = await prisma.$transaction(async (tx) => {
@@ -2140,23 +2142,22 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
             const novaVenda = await tx.vendas.create({
                 data: {
                     id: vendaId,
-                    descricao: descricao || orcamento.descricao || `Venda a partir do orçamento ${id}`,
-                    usuarioId: usuarioId || orcamento.usuarioId,
-                    clienteId: clienteId || orcamento.clienteId,
-                    nome: nome || orcamento.nome,
-                    cpf: cpf || orcamento.cpf,
-                    cep: cep || orcamento.cep,
-                    forma: forma || orcamento.forma,
-                    estado: estado || orcamento.estado,
-                    cidade: cidade || orcamento.cidade,
-                    bairro: bairro || orcamento.bairro,
-                    rua: rua || orcamento.rua,
-                    numero: numero || orcamento.numero,
-                    telefone: telefone || orcamento.telefone,
+                    descricao: orcamento.descricao || `Venda a partir do orçamento ${id}`,
+                    usuarioId:  orcamento.usuarioId,
+                    clienteId: orcamento.clienteId,
+                    nome: orcamento.nome,
+                    cpf:  orcamento.cpf,
+                    cep:  orcamento.cep,
+                    forma: orcamento.forma,
+                    estado: orcamento.estado,
+                    cidade:  orcamento.cidade,
+                    bairro:  orcamento.bairro,
+                    rua:  orcamento.rua,
+                    numero:  orcamento.numero,
+                    telefone:  orcamento.telefone,
                     valorTotal: valorTotalCalculado,
-                    dataPagamento: dataPagamentoFormatada,
-                    pago: !!pago,
-                    vendaE: { create: vendaEComId }
+                    vendaE: { create: vendaEComId },
+                    dataPagamento: dataPagamentoFormatada
                 },
                 include: {
                     usuario: true,
