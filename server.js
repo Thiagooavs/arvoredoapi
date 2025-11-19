@@ -2364,9 +2364,7 @@ app.put("/vendas/:id", async (req, res) => {
                     include: {
                         produto: true,
                         peca: true,
-                        estoqueMadeira: {
-                            madeira: true
-                        }
+                        estoqueMadeira: true
                     }
                 }
             }
