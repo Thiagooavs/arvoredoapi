@@ -2086,7 +2086,7 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
 
         if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
 
-        if(orcamento.convertido = true) res.status(400).json({message: "orcamento já convertido"})
+        if(orcamento.convertido === true) return res.status(400).json({message: "orcamento já convertido"})
 
         const vendaEFromOrcamento = orcamento.orcamentoE.map(item => ({
             produtoId: item.produtoId,
