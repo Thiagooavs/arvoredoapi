@@ -2079,37 +2079,39 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
         const id = parseInt(req.params.id)
         if (isNaN(id)) return res.status(404).json({ error: "ID inválido" })  // id do orçamento
 
-        const orcamento = await prisma.orcamento.findUnique({
-            where: { id },
-            include: { orcamentoE: true }
-        });
-
-        if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
-
-        if(orcamento.convertido === true) return res.status(400).json({message: "orcamento já convertido"})
-
-        const vendaEFromOrcamento = orcamento.orcamentoE.map(item => ({
-            produtoId: item.produtoId,
-            pecaId: item.pecaId,
-            estoqueMadeiraId: item.estoqueMadeiraId,
-            quantidade: item.quantidade || 0,
-            valorVenda: item.valorVenda || 0,
-            valorTotal: item.valorTotal || 0
-        }));
-
-        // ✅ ADICIONE ESTA LINHA - Calcula o valor total
-        const valorTotalCalculado = vendaEFromOrcamento.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
-
-        let dataPagamentoFormatada;
-
-
-        // ✅ Se não foi enviada, define para 1 mês depois da data de criação
-        dataPagamentoFormatada = new Date();
-        dataPagamentoFormatada.setMonth(dataPagamentoFormatada.getMonth() + 1);
-
-
         // Transação atômica
         const vendaSalva = await prisma.$transaction(async (tx) => {
+
+            const orcamento = await tx.orcamento.findUnique({
+                where: { id },
+                include: { orcamentoE: true }
+            });
+
+            if (!orcamento) {
+                throw new Error("Orçamento não encontrado");
+            }
+
+            // ✅ VALIDAÇÃO DENTRO DA TRANSAÇÃO
+            if (orcamento.convertido === true) {
+                throw new Error("Orçamento já foi convertido");
+            }
+
+            const vendaEFromOrcamento = orcamento.orcamentoE.map(item => ({
+                produtoId: item.produtoId,
+                pecaId: item.pecaId,
+                estoqueMadeiraId: item.estoqueMadeiraId,
+                quantidade: item.quantidade || 0,
+                valorVenda: item.valorVenda || 0,
+                valorTotal: item.valorTotal || 0
+            }));
+
+            // ✅ ADICIONE ESTA LINHA - Calcula o valor total
+            const valorTotalCalculado = vendaEFromOrcamento.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
+
+            // ✅ Se não foi enviada, define para 1 mês depois da data de criação
+            let dataPagamentoFormatada = new Date();
+            dataPagamentoFormatada.setMonth(dataPagamentoFormatada.getMonth() + 1);
+
             // 🔸 Valida estoque antes
             for (const item of vendaEFromOrcamento) {
                 if (item.estoqueMadeiraId) {
