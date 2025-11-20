@@ -189,6 +189,7 @@ model Orcamento {
   descricao       String?
   usuarioId       Int  @map("usuario") 
   clienteId       Int?  @map("cliente") 
+  convertido      Boolean?   @default(false)
   nome            String?
   cpf             String?
   cep             String?

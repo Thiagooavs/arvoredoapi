@@ -2086,6 +2086,8 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
 
         if (!orcamento) return res.status(404).json({ message: "Orçamento não encontrado" });
 
+        if(orcamento.convertido = true) res.status(400).json({message: "orcamento já convertido"})
+
         const vendaEFromOrcamento = orcamento.orcamentoE.map(item => ({
             produtoId: item.produtoId,
             pecaId: item.pecaId,
@@ -2099,12 +2101,12 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
         const valorTotalCalculado = vendaEFromOrcamento.reduce((acc, i) => acc + (i.valorTotal || 0), 0);
 
         let dataPagamentoFormatada;
-        
-       
-            // ✅ Se não foi enviada, define para 1 mês depois da data de criação
-            dataPagamentoFormatada = new Date();
-            dataPagamentoFormatada.setMonth(dataPagamentoFormatada.getMonth() + 1);
-    
+
+
+        // ✅ Se não foi enviada, define para 1 mês depois da data de criação
+        dataPagamentoFormatada = new Date();
+        dataPagamentoFormatada.setMonth(dataPagamentoFormatada.getMonth() + 1);
+
 
         // Transação atômica
         const vendaSalva = await prisma.$transaction(async (tx) => {
@@ -2143,18 +2145,18 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
                 data: {
                     id: vendaId,
                     descricao: orcamento.descricao || `Venda a partir do orçamento ${id}`,
-                    usuarioId:  orcamento.usuarioId,
+                    usuarioId: orcamento.usuarioId,
                     clienteId: orcamento.clienteId,
                     nome: orcamento.nome,
-                    cpf:  orcamento.cpf,
-                    cep:  orcamento.cep,
+                    cpf: orcamento.cpf,
+                    cep: orcamento.cep,
                     forma: orcamento.forma,
                     estado: orcamento.estado,
-                    cidade:  orcamento.cidade,
-                    bairro:  orcamento.bairro,
-                    rua:  orcamento.rua,
-                    numero:  orcamento.numero,
-                    telefone:  orcamento.telefone,
+                    cidade: orcamento.cidade,
+                    bairro: orcamento.bairro,
+                    rua: orcamento.rua,
+                    numero: orcamento.numero,
+                    telefone: orcamento.telefone,
                     valorTotal: valorTotalCalculado,
                     vendaE: { create: vendaEComId },
                     dataPagamento: dataPagamentoFormatada
@@ -2169,6 +2171,13 @@ app.post("/vendas/from-orcamento/:id", async (req, res) => {
                             estoqueMadeira: { include: { madeira: true, tamanho: true } }
                         }
                     }
+                }
+            });
+
+            const noDouble = await tx.orcamento.update({
+                where: { id },
+                data: {
+                    convertido: true
                 }
             });
 
